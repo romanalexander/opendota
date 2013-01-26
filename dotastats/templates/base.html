@@ -7,10 +7,9 @@
     <head>
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-        <title>{% block title %}{% endblock %}</title>
-        <meta name="description" content="">
+        <title>{% block title %}OpenDotA - Open-Source DotA2 Statistics{% endblock %}</title>
+        <meta name="description" content="{% block description %}{% endblock %}">
         <meta name="viewport" content="width=device-width">
-
         <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
         <style>
             body {
@@ -28,7 +27,7 @@
         <!--[if lt IE 7]>
             <p class="chromeframe">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> or <a href="http://www.google.com/chromeframe/?redirect=true">activate Google Chrome Frame</a> to improve your experience.</p>
         <![endif]-->
-        
+        <a href="#"><img style="position: absolute; top: 0; right: 0; border: 0; z-index:9999;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_gray_6d6d6d.png" alt="Fork me on GitHub"></a>
         {% block navbar %}
         <div class="navbar navbar-inverse navbar-fixed-top">
             <div class="navbar-inner">
@@ -57,33 +56,38 @@
                             </li>-->
                         </ul>
                         
-                        <div class="navbar-form pull-right">
+                        {% comment %}<div class="navbar-form pull-right">
                             {% if not user.is_authenticated %}
                             <a href="{% url openid-login %}"><img src="{% static 'img/sits_small.png' %}"></a>
                             {% else %}
                             Authenticated! {{ user.get_full_name }}
                             {% endif %}
-                        </div>
+                        </div>{% endcomment %}
                     </div><!--/.nav-collapse -->
                 </div>
             </div>
         </div>
         {% endblock navbar %}
-
-        <div class="container">
+        <div class="alert alert-warning" style="text-align:center;">
+            <b>DISCLAIMER!</b> We are still in development. Data displayed during this period may not be accurate. Sorry!
+        </div>
+        <div class="container" style="min-height: 700px;">
             {% block content %}
             <div class="well well-small">
             <p>TODO.</p>
             </div>
             
             {% endblock content %}
-            {% block footer %}
-            <hr>
-            <footer>
-                <p>&copy; Company 2012</p>
-            </footer>
-            {% endblock footer %} 
+            
         </div> <!-- /container -->
+        {% block footer %}
+        <hr>
+        <div class="container">
+        <footer>
+            <p class="pull-right">About - GitHub</p>
+        </footer>
+        </div>
+        {% endblock footer %} 
 
         <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
         <script>window.jQuery || document.write('<script src="{% static "js/jquery-1.9.0.min.js" %}"><\/script>')</script>
