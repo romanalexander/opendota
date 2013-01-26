@@ -195,3 +195,8 @@ LOGIN_URL = '/steam/login/'
 LOGIN_REDIRECT_URL = '/'
 OPENID_SSO_SERVER_URL = 'server-endpoint-url'
 OPENID_SSO_SERVER_URL = 'https://steamcommunity.com/openid'
+
+# Parse database configuration from $DATABASE_URL
+import dj_database_url
+if not DEBUG: # In production, use heroku postgres. 
+    DATABASES['default'] =  dj_database_url.config()
