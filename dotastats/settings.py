@@ -1,4 +1,6 @@
 import os
+import sys
+
 settings_dir = os.path.dirname(__file__)
 PROJECT_ROOT = os.path.abspath(os.path.dirname(settings_dir))
 
@@ -138,7 +140,12 @@ LOGGING = {
             'level': 'ERROR',
             'filters': ['require_debug_false'],
             'class': 'django.utils.log.AdminEmailHandler'
-        }
+        },
+        'console':{
+            'level':'INFO',
+            'class':'logging.StreamHandler',
+            'strm': sys.stdout
+        },
     },
     'loggers': {
         'django.request': {
