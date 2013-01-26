@@ -24,9 +24,11 @@ league_id=<id> # matches for a particular league
 start_at_match_id=<id> # Start the search at the indicated match id, descending
 matches_requested=<n> # Defaults is 25 matches, this can limit to less
 """
+
 # Takes in GetMatchHistoryJson, hits DB cache or asks WebAPI.
+# TODO: Cache results. (Don't rely on page cache only.)
 def GetMatchHistory(**kargs):
-    pass
+    return GetMatchHistoryJson(**kargs)
 
 def GetMatchDetails(matchid):
     try:
@@ -55,7 +57,7 @@ def GetMatchDetails(matchid):
         match_details.save()
         for json_player in json_player_data:
             match_details.matchdetailsplayerentry_set.create(
-                account_id=convertAccountNumbertoSteam64(json_player['account_id']), # Store all data in steam64.
+                account_id=convertAccountNumbertoSteam64(json_player['account_id']), # Store all data in steam64. No reason to have Steam32.
                 player_slot=json_player['player_slot'],
                 hero_id=json_player['hero_id'],
                 item_0=json_player['item_0'],
@@ -105,7 +107,6 @@ def GetMatchHistoryJson(**kargs):
             
     return json_data
 
-# TODO: CACHEME
 def GetMatchDetailsJson(match_id):
     json_data = dict()
     try:
@@ -126,6 +127,7 @@ def GetMatchDetailsJson(match_id):
     
     return json_data
 
+# Converts the 'account number' to Steam64. Does not convert PRIVATE players.
 def convertAccountNumbertoSteam64(steamID):
     if steamID == 4294967295:
         return 4294967295
