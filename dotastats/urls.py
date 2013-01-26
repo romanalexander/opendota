@@ -8,4 +8,5 @@ urlpatterns = patterns('',
     url(r'^matches/(?P<match_id>\d{8})/$', 'dotastats.views.matches_id', name='matches_id'),
     url(r'^admin/', include(admin.site.urls)),
     url(r'^steam/', include('django_openid_auth.urls')),
+    url(r'^about/', 'dotastats.views.about', name='about'),
 )
