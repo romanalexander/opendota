@@ -11,12 +11,12 @@ class SteamAccount(): # Not a DB model, used for caching purposes.
         
 
 class MatchDetails(models.Model):
-    match_id = models.PositiveIntegerField(primary_key=True, unique=True)
+    match_id = models.BigIntegerField(primary_key=True, unique=True)
     last_refresh = models.DateTimeField(auto_now=True, auto_now_add=True) # Last time this data was accessed for freshness.
     season = models.IntegerField()
     radiant_win = models.BooleanField()
     duration = models.IntegerField() # Seconds of match
-    starttime = models.PositiveIntegerField() # UNIX Timestamp
+    starttime = models.BigIntegerField() # UNIX Timestamp
     tower_status_radiant = models.IntegerField()
     tower_status_dire = models.IntegerField()
     barracks_status_radiant = models.IntegerField()
@@ -32,7 +32,7 @@ class MatchDetails(models.Model):
     
 class MatchDetailsPlayerEntry(models.Model):
     match_details = models.ForeignKey('MatchDetails')
-    account_id = models.IntegerField(db_index=True)
+    account_id = models.BigIntegerField(db_index=True)
     player_slot = models.IntegerField()
     hero_id = models.IntegerField()
     item_0 = models.IntegerField()
