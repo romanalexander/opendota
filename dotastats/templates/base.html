@@ -88,6 +88,17 @@
         <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
         <script>window.jQuery || document.write('<script src="{% static "js/jquery-1.9.0.min.js" %}"><\/script>')</script>
         <script src="{% static 'js/bootstrap.min.js' %}"></script>
+        <script src="{% static 'js/analytics.min.js' %}"></script>
+        <script type="text/javascript">
+        analytics.initialize({
+            'Google Analytics' : {
+                trackingId              : 'UA-37993557-1',
+                enhancedLinkAttribution : true,
+                siteSpeedSampleRate     : 10
+            },
+        });
+        {% block analytics %}{% endblock analytics %}
+        </script>
         {% block scripts %}
         {% endblock scripts %}
     </body>
