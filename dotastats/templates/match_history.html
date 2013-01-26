@@ -1,7 +1,13 @@
 {% extends 'base.html' %}
 
 {% block content %}
+    <form method="post" class="form-search" style="text-align:center;"> {% csrf_token%}
+        <div class="control-group">
+            <div class="input-prepend"><span class="add-on"><i class="icon-search"> </i></span><input id="match_id" type="text" class="input-large"></div>
+            <button type="submit" class="btn">Search</button>
+        </div>
+    </form>
     {% for match in matches %}
-        {# TODO: PUT MATCH DATA HERE #}
+        MatchID: <a href="{% url matches_id match_id=match.match_id %}">{{ match.match_id }}</a><br>
     {% endfor %}
 {% endblock %}
