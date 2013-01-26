@@ -1,14 +1,13 @@
 from django.db import models
 
 class SteamAccount(): # Not a DB model, used for caching purposes.
-    #self.values=dict()
     def __init__(self, values_dict):
-        self.values = values_dict
+        self.values_dict = values_dict
     
-    def __getattr__(self, attr):
-        if attr in self.values:
-          return self.values[attr]
-        raise AttributeError("%r object has no attribute %r" % (type(self).__name__, attr))
+    """def __getattr__(self, attr):
+        if attr in self.values_dict:
+            return self.values[attr]
+        raise AttributeError("Object has no attribute %r" % attr)"""
         
 
 class MatchDetails(models.Model):

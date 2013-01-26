@@ -5,7 +5,6 @@ from django.conf import settings
 from django.core.cache import get_cache
 from django.core.exceptions import ObjectDoesNotExist
 from dotastats.models.models import SteamAccount, MatchDetails, MatchDetailsPlayerEntry
-from xml.dom import minidom
 
 # API Key macro from settings file.
 API_KEY = settings.STEAM_API_KEY
@@ -142,7 +141,7 @@ def GetPlayerName(player_id):
     if cache.get(player_id) == None:
         return 'Critical Cache Failure'
     else:
-        return cache.get(player_id).personaname
+        return cache.get(player_id).values_dict['personaname']
 
 # Loads names into cache.
 # Returns: Dict of player accountids, only retreives names that aren't in the cache.
@@ -168,7 +167,7 @@ def GetPlayerNames(player_ids):
             json_data = json.loads(response.read())['response']
             for player in json_data['players']:
                 player_obj = SteamAccount(player)
-                cache.set(player_obj.steamid, player_obj)
+                cache.set(player_obj.values_dict['steamid'], player_obj)
                 return_dict.update({player_id: player_obj})
             response.close()
     except urllib2.HTTPError, e:
