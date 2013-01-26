@@ -9,4 +9,6 @@ urlpatterns = patterns('',
     url(r'^admin/', include(admin.site.urls)),
     url(r'^steam/', include('django_openid_auth.urls')),
     url(r'^about/', 'dotastats.views.about', name='about'),
+    url(r'^news/', 'dotastats.views.news', name='news'),
+    url(r'^leagues/', 'dotastats.views.leagues', name='leagues'),
 )

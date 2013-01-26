@@ -20,3 +20,11 @@ def matches_id(request, match_id):
 @cache_page(60 * 60) # 60min
 def about(request):
     return render(request, 'about.html')
+
+@cache_page(60 * 60) # 60min
+def news(request):
+    return render(request, 'news.html')
+
+@cache_page(60 * 60) # 60min
+def leagues(request):
+    return render(request, 'leagues.html')
