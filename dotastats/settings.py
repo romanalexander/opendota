@@ -156,6 +156,22 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'django.contrib.messages.context_processors.messages',
     )
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'cache_default',
+    },
+    'steam_names': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'cache_steam_names',
+        'TIMEOUT': 3600,
+        'MAX_ENTRIES': 5000,
+        'KEY_PREFIX': 'steamid_',
+    },
+}
+
+# Steam Web API Key (generate new before project deployments)
+STEAM_API_KEY = "B5CD24440CC4C06B6C4402D29D533022"
 
 # Following settings are for django-openid-auth
 AUTHENTICATION_BACKENDS = (
