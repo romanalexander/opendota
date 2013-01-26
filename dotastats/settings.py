@@ -4,7 +4,7 @@ PROJECT_ROOT = os.path.abspath(os.path.dirname(settings_dir))
 
 # Django settings for dotastats project.
 
-DEBUG = True
+DEBUG = False
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
