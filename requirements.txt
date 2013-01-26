@@ -1,0 +1,14 @@
+Django==1.4.3
+Flask==0.9
+Jinja2==2.6
+Werkzeug==0.8.3
+argparse==1.2.1
+colorama==0.2.4
+distribute==0.6.34
+django-openid-auth==0.4
+heroku==0.1.2
+python-dateutil==1.5
+python-openid==2.2.5
+requests==0.14.2
+simplejson==3.0.7
+wsgiref==0.1.2
