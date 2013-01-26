@@ -11,8 +11,8 @@ MANAGERS = ADMINS
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': '',                      # Or path to database file if using sqlite3.
+        'ENGINE': 'django.db.backends.sqlite3', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
+        'NAME': '/var/lib/stickshift/6597a47f58b8454583e55fa74ce522a8/app-root/data/387405/testdb.sqllite',                      # Or path to database file if using sqlite3.
         'USER': '',                      # Not used with sqlite3.
         'PASSWORD': '',                  # Not used with sqlite3.
         'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
@@ -64,9 +64,6 @@ STATIC_URL = '/static/'
 
 # Additional locations of static files
 STATICFILES_DIRS = (
-    # Put strings here, like "/home/html/static" or "C:/www/django/static".
-    # Always use forward slashes, even on Windows.
-    # Don't forget to use absolute paths, not relative paths.
     '/var/lib/stickshift/6597a47f58b8454583e55fa74ce522a8/app-root/data/387405/dotastats/static',
 )
 
@@ -79,7 +76,7 @@ STATICFILES_FINDERS = (
 )
 
 # Make this unique, and don't share it with anybody.
-SECRET_KEY = 'e0c=&amp;o-cf4rs)(she@v7pnl&amp;h9*r0vmqzyomodb$xo5%@wdl&amp;l'
+SECRET_KEY = 'sw*xnj3*+f-1%0fp310ajg-9f2(8_5$1=(gu7&q)h#lkwj%-an'
 
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
@@ -94,8 +91,7 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    # Uncomment the next line for simple clickjacking protection:
-    # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
 
 ROOT_URLCONF = 'dotastats.urls'
@@ -104,9 +100,6 @@ ROOT_URLCONF = 'dotastats.urls'
 WSGI_APPLICATION = 'dotastats.wsgi.application'
 
 TEMPLATE_DIRS = (
-    # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
-    # Always use forward slashes, even on Windows.
-    # Don't forget to use absolute paths, not relative paths.
     '/var/lib/stickshift/6597a47f58b8454583e55fa74ce522a8/app-root/data/387405/dotastats/templates',
 )
 
@@ -117,10 +110,8 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # Uncomment the next line to enable the admin:
-    # 'django.contrib.admin',
-    # Uncomment the next line to enable admin documentation:
-    # 'django.contrib.admindocs',
+    'django.contrib.admin',
+    'django_openid_auth',
 )
 
 # A sample logging configuration. The only tangible logging
@@ -151,3 +142,32 @@ LOGGING = {
         },
     }
 }
+
+TEMPLATE_CONTEXT_PROCESSORS = (
+    'django.contrib.auth.context_processors.auth',
+    'dotastats.common.context_processors.ip_address_processor',
+    'dotastats.common.context_processors.page_path_processor',
+    'django.core.context_processors.request',
+    'django.core.context_processors.debug',
+    'django.core.context_processors.i18n',
+    'django.core.context_processors.media',
+    'django.core.context_processors.static',
+    'django.core.context_processors.tz',
+    'django.contrib.messages.context_processors.messages',
+    )
+
+
+# Following settings are for django-openid-auth
+AUTHENTICATION_BACKENDS = (
+    'django_openid_auth.auth.OpenIDBackend',
+    'django.contrib.auth.backends.ModelBackend',
+)
+# To create users automatically when a new OpenID is used
+OPENID_CREATE_USERS = True
+#To have user details updated from OpenID Simple Registration
+OPENID_UPDATE_DETAILS_FROM_SREG = True
+#Configure the LOGIN_URL and LOGIN_REDIRECT_URL appropriately
+LOGIN_URL = '/steam/login/'
+LOGIN_REDIRECT_URL = '/'
+OPENID_SSO_SERVER_URL = 'server-endpoint-url'
+OPENID_SSO_SERVER_URL = 'https://steamcommunity.com/openid'
