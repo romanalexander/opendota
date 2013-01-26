@@ -1,3 +1,7 @@
+import os
+settings_dir = os.path.dirname(__file__)
+PROJECT_ROOT = os.path.abspath(os.path.dirname(settings_dir))
+
 # Django settings for dotastats project.
 
 DEBUG = True
@@ -12,7 +16,7 @@ MANAGERS = ADMINS
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': '/var/lib/stickshift/6597a47f58b8454583e55fa74ce522a8/app-root/data/387405/testdb.sqllite',                      # Or path to database file if using sqlite3.
+        'NAME': os.path.join(PROJECT_ROOT, '/testdb.sqllite'),                      # Or path to database file if using sqlite3.
         'USER': '',                      # Not used with sqlite3.
         'PASSWORD': '',                  # Not used with sqlite3.
         'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
@@ -64,7 +68,7 @@ STATIC_URL = '/static/'
 
 # Additional locations of static files
 STATICFILES_DIRS = (
-    '/var/lib/stickshift/6597a47f58b8454583e55fa74ce522a8/app-root/data/387405/dotastats/static',
+    os.path.join(PROJECT_ROOT, 'dotastats/static'),
 )
 
 # List of finder classes that know how to find static files in
@@ -100,11 +104,12 @@ ROOT_URLCONF = 'dotastats.urls'
 WSGI_APPLICATION = 'dotastats.wsgi.application'
 
 TEMPLATE_DIRS = (
-    '/var/lib/stickshift/6597a47f58b8454583e55fa74ce522a8/app-root/data/387405/dotastats/templates',
+    os.path.join(PROJECT_ROOT, 'dotastats/templates/'),
 )
 
 INSTALLED_APPS = (
     'dotastats.models',
+    'dotastats',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
