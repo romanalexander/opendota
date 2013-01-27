@@ -1,10 +1,10 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from dotastats.json import steamapi
 from django.views.decorators.cache import cache_page
 
 def home(request):
     return render(request, 'home.html')
-    
+
 @cache_page(60 * 15) # 15min
 def matches_overview(request):
     result_dict = steamapi.GetMatchHistory()
@@ -28,3 +28,13 @@ def news(request):
 @cache_page(60 * 60) # 60min
 def leagues(request):
     return render(request, 'leagues.html')
+
+# Ajax Polymorphic search provider. Consider using Haystack instead of internal.
+def search(request, search_param=None):
+    result_dict = dict({'error': None, 
+                        'result_matches': None,
+                        'result_hero': None, 
+                        'result_player': None, 
+                        'result_item': None})
+    return render(request, 'search.html', result_dict)
+

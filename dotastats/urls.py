@@ -11,4 +11,5 @@ urlpatterns = patterns('',
     url(r'^about/', 'dotastats.views.about', name='about'),
     url(r'^news/', 'dotastats.views.news', name='news'),
     url(r'^leagues/', 'dotastats.views.leagues', name='leagues'),
+    url(r'^search/(?P<search_param>[-A-Za-z0-9_]+)?$', 'dotastats.views.search', name='search'),
 )
