@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    {% if match %}
+
+    {% for team in teams %}
+    {% if forloop.counter == 1%}
+    <h1>Radiant</h1>
+    {% else %}
+    <h1>Dire</h1>
+    {% endif %}
+    <table class="table table-bordered">
+        <thead>
+            <th>Hero</th>
+            <th>Level</th>
+            <th>Player Name</th>
+            <th>K / D / A</th>
+            <th>LH / D</th>
+        </thead>
+        <tbody>
+            {% for playerentry in  team.all %}
+            <tr {% if playerentry.leaver_status > 0 %}class="error"{% endif %}>{# Makes leavers appear in red. #}
+            <td>{{ playerentry.hero_id }}</td><!-- TODO MAKE ICON -->
+            <td>{{ playerentry.level }}</td>
+            <td>
+                {% if playerentry.account_id != 4294967295 %}
+                <a href="http://steamcommunity.com/profiles/{{ playerentry.account_id }}">{{ playerentry.get_steam_name }}</a>
+                {% else %}
+                <em>{{ playerentry.get_steam_name}}</em>
+                {% endif %}
+            </td>
+            
+            
+            
+            
+            
+            <td>{{ playerentry.kills }}/{{ playerentry.deaths }}/{{ playerentry.assists }}</td>
+            <td>{{ playerentry.last_hits }} / {{ playerentry.denies }}</td>
+            <!-- TODO: ITEMS HERE -->
+            </tr>
+
+        {% endfor %}
+        </tbody>
+    </table>
+    {% endfor %}
+    
+    
+    {% else %}
+        <p>No match found.</p>
+    {% endif %}
+    
+{% endblock %}

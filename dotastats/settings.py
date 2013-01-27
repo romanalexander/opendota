@@ -104,6 +104,7 @@ TEMPLATE_DIRS = (
 )
 
 INSTALLED_APPS = (
+    'dotastats.models',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -158,12 +159,12 @@ TEMPLATE_CONTEXT_PROCESSORS = (
 
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
         'LOCATION': 'cache_default',
     },
-    'steam_names': {
-        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
-        'LOCATION': 'cache_steam_names',
+    'steam_accounts': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'cache_steam_accounts',
         'TIMEOUT': 3600,
         'MAX_ENTRIES': 5000,
         'KEY_PREFIX': 'steamid_',
