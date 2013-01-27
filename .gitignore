@@ -1,5 +1,7 @@
 .c9revisions
 .project
 .pydevproject
+heroku-client
+venv
 *.pyc
 *.sqllite
