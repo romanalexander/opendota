@@ -102,7 +102,7 @@ def GetMatchHistoryJson(**kargs):
         elif e.code == 503:
             json_data.update({'error': 'Steam servers overloaded.'})
         else:
-            json_data.update({'error': 'Unknown HTTP error' + e.code()})
+            json_data.update({'error': 'Unknown HTTP error' + e.code})
             
     return json_data
 
@@ -122,7 +122,7 @@ def GetMatchDetailsJson(match_id):
         elif e.code == 503:
             json_data.update({'error': 'Steam servers overloaded.'})
         else:
-            json_data.update({'error': 'Unknown HTTP error' + e.code()})
+            json_data.update({'error': 'Unknown HTTP error' + e.code})
     
     return json_data
 
@@ -132,6 +132,13 @@ def convertAccountNumbertoSteam64(steamID):
         return 4294967295
     else:
         return steamID + 76561197960265728
+    
+# Does the opposite of convertAccountNumbertoSteam64 and converts the Steam64 down to AccountNumber. 
+def convertSteam64toAccountNumber(steamID):
+    if steamID == 4294967295:
+        return 4294967295
+    else:
+        return steamID - 76561197960265728
 
 # Only retreives name from cache. Doesn't load into cache or perform WebAPI lookups.
 def GetPlayerName(player_id):
@@ -152,7 +159,7 @@ def GetPlayerNames(player_ids):
         request_list = []
         cache.set(4294967295, 'PRIVATE')
         if type(player_ids) is not list: # Always make sure player_ids is a list.
-            players_ids = [player_ids]
+            players_ids = [player_ids,]
             
         for player_id in player_ids:
             if player_id == 4294967295: # Invalid playerid, assume private
@@ -178,7 +185,7 @@ def GetPlayerNames(player_ids):
         elif e.code == 503:
             return_dict.update({'error': 'Steam servers overloaded.'})
         else:
-            return_dict.update({'error': 'Unknown HTTP error' + e.code()})
+            return_dict.update({'error': 'Unknown HTTP error' + e.code})
             
     return return_dict
 
