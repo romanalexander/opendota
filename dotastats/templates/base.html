@@ -20,7 +20,7 @@
         <link rel="stylesheet" href="{% static 'css/bootstrap-responsive.min.css' %}">
         <!-- <link rel="stylesheet" href="css/main.css"> TODO: REMOVE ME -->
         <script src="{% static 'js/modernizr-2.6.2-respond-1.1.0.min.js' %}"></script>
-        {% block header %}{% endblock header %}
+        {% block headerscripts %}{% endblock headerscripts %}
     </head>
     <body>
         <!--[if lt IE 7]>
@@ -81,16 +81,15 @@
         <script src="{% static 'js/bootstrap.min.js' %}"></script>
         <script src="{% static 'js/analytics.min.js' %}"></script>
         <script type="text/javascript">
-        analytics.initialize({
-            'Google Analytics' : {
-                trackingId              : 'UA-37993557-1',
-                enhancedLinkAttribution : true,
-                siteSpeedSampleRate     : 10
-            },
-        });
-        {% block analytics %}{% endblock analytics %}
+            analytics.initialize({
+                'Google Analytics' : {
+                    trackingId              : 'UA-37993557-1',
+                    enhancedLinkAttribution : true,
+                    siteSpeedSampleRate     : 10
+                },
+            });
+            {% block analytics %}{% endblock analytics %}
         </script>
-        {% block scripts %}
-        {% endblock scripts %}
+        {% block scripts %}{% endblock scripts %}
     </body>
 </html>
