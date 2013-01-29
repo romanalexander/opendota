@@ -1,6 +1,14 @@
 {% extends 'base.html' %}
 {% load staticfiles %}
 
+{% block scripts %}
+<style>
+.dota_item {
+    width: 62px; height: 32px;
+}
+</style>
+{% endblock %}
+
 {% block content %}
     {% include 'includes/searchbar_snippet.html' %}
     {% if match %}
@@ -17,10 +25,11 @@
                     <th>Player Name</th>
                     <th>K / D / A</th>
                     <th>LH / D</th>
+                    <th>Items</th>
                 </thead>
                 <tbody>
                     {% for playerentry in team.all %}
-                        <tr>
+                    <tr>
                         <td><img src="{% static 'img/miniheroes/'|add:playerentry.hero_id.get_code_name|add:'.png' %}" alt="{{ playerentry.hero_id }}"></td><!-- TODO MAKE ICON -->
                         <td>{{ playerentry.level }}</td>
                         <td>{% if playerentry.leaver_status > 0 %}
@@ -34,8 +43,27 @@
                         </td>
                         <td>{{ playerentry.kills }}/{{ playerentry.deaths }}/{{ playerentry.assists }}</td>
                         <td>{{ playerentry.last_hits }} / {{ playerentry.denies }}</td>
-                        <!-- TODO: ITEMS HERE -->
-                        </tr>
+                        <td>
+                            {% if playerentry.item_0.get_code_name %}
+                            <img class="dota_item" src="{% static 'img/items/'|add:playerentry.item_0.get_code_name|add:'.png' %}">
+                            {% endif %}
+                            {% if playerentry.item_1.get_code_name %}
+                            <img class="dota_item" src="{% static 'img/items/'|add:playerentry.item_1.get_code_name|add:'.png' %}">
+                            {% endif %}
+                            {% if playerentry.item_2.get_code_name %}
+                            <img class="dota_item" src="{% static 'img/items/'|add:playerentry.item_2.get_code_name|add:'.png' %}">
+                            {% endif %}
+                            {% if playerentry.item_3.get_code_name %}
+                            <img class="dota_item" src="{% static 'img/items/'|add:playerentry.item_3.get_code_name|add:'.png' %}">
+                            {% endif %}
+                            {% if playerentry.item_4.get_code_name %}
+                            <img class="dota_item" src="{% static 'img/items/'|add:playerentry.item_4.get_code_name|add:'.png' %}">
+                            {% endif %}
+                            {% if playerentry.item_5.get_code_name %}
+                            <img class="dota_item" src="{% static 'img/items/'|add:playerentry.item_5.get_code_name|add:'.png' %}">
+                            {% endif %}
+                        </td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>

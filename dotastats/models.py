@@ -23,7 +23,19 @@ class SteamPlayer(models.Model):
                            avatarmedium = json.get('avatarmedium'),
                            avatarfull = json.get('avatarfull'),
                            lastlogoff = datetime.fromtimestamp(json.get('lastlogoff')))
-        
+      
+# To refresh, use django-admin.py getitems
+class Items(models.Model):
+    item_id = models.IntegerField(primary_key=True) # From the client files.
+    client_name = models.TextField()
+    
+    def __unicode__(self):
+        return self.client_name
+    
+    def get_code_name(self):
+        return self.client_name[5:] # Ex: item_blink
+    
+# To refresh, use django-admin.py getheroes
 class Heroes(models.Model):
     hero_id = models.IntegerField(primary_key=True) # From the client files.
     client_name = models.TextField()
@@ -33,7 +45,7 @@ class Heroes(models.Model):
         return self.dota2_name
     
     def get_code_name(self):
-        return self.client_name[14:] #Ex:  npc_dota_hero_chaos_knight
+        return self.client_name[14:] # Ex:  npc_dota_hero_chaos_knight
 
 # Long-running queue of matches to look up.
 class MatchHistoryQueue(models.Model):
@@ -45,7 +57,7 @@ class MatchHistoryQueuePlayers(models.Model):
     match_history_queue = models.ForeignKey('MatchHistoryQueue')
     account_id = models.BigIntegerField()
     player_slot = models.IntegerField()
-    hero_id = models.ForeignKey('Heroes')
+    hero_id = models.ForeignKey('Heroes', related_name='+')
 
 class MatchDetails(models.Model):
     match_id = models.BigIntegerField(primary_key=True, unique=True)
@@ -99,12 +111,12 @@ class MatchDetailsPlayerEntry(models.Model):
     account_id = models.ForeignKey(SteamPlayer, related_name='+', db_column='account_id', null=True)
     player_slot = models.IntegerField()
     hero_id = models.ForeignKey('Heroes', related_name='+', db_column='hero_id')
-    item_0 = models.IntegerField()
-    item_1 = models.IntegerField()
-    item_2 = models.IntegerField()
-    item_3 = models.IntegerField()
-    item_4 = models.IntegerField()
-    item_5 = models.IntegerField()
+    item_0 = models.ForeignKey('Items', related_name='+', db_column='item_0')
+    item_1 = models.ForeignKey('Items', related_name='+', db_column='item_1')
+    item_2 = models.ForeignKey('Items', related_name='+', db_column='item_2')
+    item_3 = models.ForeignKey('Items', related_name='+', db_column='item_3')
+    item_4 = models.ForeignKey('Items', related_name='+', db_column='item_4')
+    item_5 = models.ForeignKey('Items', related_name='+', db_column='item_5')
     kills = models.IntegerField()
     deaths = models.IntegerField()
     assists = models.IntegerField()
@@ -130,12 +142,12 @@ class MatchDetailsPlayerEntry(models.Model):
                 account_id_id=steamapi.convertAccountNumbertoSteam64(json['account_id']), # Store all data in steam64. No reason to have Steam32.
                 player_slot=json['player_slot'],
                 hero_id_id=json['hero_id'],
-                item_0=json['item_0'],
-                item_1=json['item_1'],
-                item_2=json['item_2'],
-                item_3=json['item_3'],
-                item_4=json['item_4'],
-                item_5=json['item_5'],
+                item_0_id=json['item_0'],
+                item_1_id=json['item_1'],
+                item_2_id=json['item_2'],
+                item_3_id=json['item_3'],
+                item_4_id=json['item_4'],
+                item_5_id=json['item_5'],
                 kills=json['kills'],
                 deaths=json['deaths'],
                 assists=json['assists'],
