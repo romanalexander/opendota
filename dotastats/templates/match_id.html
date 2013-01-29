@@ -44,22 +44,22 @@
                         <td>{{ playerentry.kills }}/{{ playerentry.deaths }}/{{ playerentry.assists }}</td>
                         <td>{{ playerentry.last_hits }} / {{ playerentry.denies }}</td>
                         <td>
-                            {% if playerentry.item_0.get_code_name %}
+                            {% if playerentry.item_0.get_code_name and playerentry.item_0.get_code_name != 'None' %}
                             <img class="dota_item" src="{% static 'img/items/'|add:playerentry.item_0.get_code_name|add:'.png' %}">
                             {% endif %}
-                            {% if playerentry.item_1.get_code_name %}
+                            {% if playerentry.item_1.get_code_name and playerentry.item_1.get_code_name != 'None'  %}
                             <img class="dota_item" src="{% static 'img/items/'|add:playerentry.item_1.get_code_name|add:'.png' %}">
                             {% endif %}
-                            {% if playerentry.item_2.get_code_name %}
+                            {% if playerentry.item_2.get_code_name and playerentry.item_2.get_code_name != 'None'  %}
                             <img class="dota_item" src="{% static 'img/items/'|add:playerentry.item_2.get_code_name|add:'.png' %}">
                             {% endif %}
-                            {% if playerentry.item_3.get_code_name %}
+                            {% if playerentry.item_3.get_code_name and playerentry.item_3.get_code_name != 'None'  %}
                             <img class="dota_item" src="{% static 'img/items/'|add:playerentry.item_3.get_code_name|add:'.png' %}">
                             {% endif %}
-                            {% if playerentry.item_4.get_code_name %}
+                            {% if playerentry.item_4.get_code_name and playerentry.item_4.get_code_name != 'None'  %}
                             <img class="dota_item" src="{% static 'img/items/'|add:playerentry.item_4.get_code_name|add:'.png' %}">
                             {% endif %}
-                            {% if playerentry.item_5.get_code_name %}
+                            {% if playerentry.item_5.get_code_name and playerentry.item_5.get_code_name != 'None'  %}
                             <img class="dota_item" src="{% static 'img/items/'|add:playerentry.item_5.get_code_name|add:'.png' %}">
                             {% endif %}
                         </td>

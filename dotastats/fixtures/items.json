@@ -1,5 +1,12 @@
 [
    {
+      "pk":0,
+      "model":"dotastats.items",
+      "fields":{
+         "client_name":"item_None"
+      }
+   },
+   {
       "pk":1,
       "model":"dotastats.items",
       "fields":{
@@ -1638,4 +1645,3 @@
       }
    }
 ]
-

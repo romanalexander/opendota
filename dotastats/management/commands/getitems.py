@@ -10,7 +10,7 @@ class Command(BaseCommand):
         file = open('resources/items.txt')
         key = None
         value = None
-        item_list = []
+        item_list = [Items(pk=0, client_name='item_None')]
         for textline in file:
             rg = re.compile('("ID")'+'.*?'+'(\\d+)',re.IGNORECASE|re.DOTALL)
             m = rg.search(textline)
