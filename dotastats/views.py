@@ -32,9 +32,6 @@ def leagues(request):
 # Ajax Polymorphic search provider. Consider using Haystack instead of internal.
 def search(request, search_param=None):
     result_dict = dict({'error': None, 
-                        'result_matches': None,
-                        'result_hero': None, 
-                        'result_player': None, 
-                        'result_item': None})
+                        'search_param': search_param})
     return render(request, 'search.html', result_dict)
 

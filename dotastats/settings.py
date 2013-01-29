@@ -119,7 +119,6 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'django.contrib.admin',
     'django_openid_auth',
-    'dotastats.models',
     'dotastats',
     'dajaxice',
     'dajax',

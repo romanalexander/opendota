@@ -9,6 +9,10 @@ class SteamAccount(): # Not a DB model, used for caching purposes.
             return self.values[attr]
         raise AttributeError("Object has no attribute %r" % attr)"""
         
+class Heroes(models.Model):
+    hero_id = models.IntegerField(primary_key=True) # From the client files.
+    client_name = models.TextField()
+    dota2_name = models.TextField()
 
 class MatchDetails(models.Model):
     match_id = models.BigIntegerField(primary_key=True, unique=True)
@@ -29,6 +33,12 @@ class MatchDetails(models.Model):
     positive_votes = models.IntegerField()
     negative_votes = models.IntegerField()
     game_mode = models.IntegerField()
+    
+    def __unicode__(self):
+        return 'MatchID: ' + self.match_id
+    
+    class Meta:
+        ordering = ('match_id',)
     
 class MatchDetailsPlayerEntry(models.Model):
     match_details = models.ForeignKey('MatchDetails')
@@ -61,6 +71,5 @@ class MatchDetailsPlayerEntry(models.Model):
         
     class Meta:
         ordering = ('player_slot',)
-        
         
 from dotastats.json import steamapi

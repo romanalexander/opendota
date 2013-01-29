@@ -1,10 +1,10 @@
 import simplejson as json
 import urllib
-import urllib2, re
+import urllib2
 from django.conf import settings
 from django.core.cache import get_cache
 from django.core.exceptions import ObjectDoesNotExist
-from dotastats.models.models import SteamAccount, MatchDetails, MatchDetailsPlayerEntry
+from dotastats.models import SteamAccount, MatchDetails, MatchDetailsPlayerEntry
 
 # API Key macro from settings file.
 API_KEY = settings.STEAM_API_KEY

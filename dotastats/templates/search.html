@@ -1,5 +1,103 @@
-{%extends "base.html" %}
+{% extends "base.html" %}
+{% load dajaxice_templatetags %}
+{% load staticfiles %}
+
+{% block headerscripts %}
+    {% dajaxice_js_import %}
+    <script src="{% static '/static/dajax/jquery.dajax.core.js' %}"></script>
+{% endblock %}
 
 {% block content %}
-    TODO: WRITE ME.
+    {% include 'includes/searchbar_snippet.html' %}
+    <input type="hidden" id="search_request" value="{{ search_param }}">
+    
+    <div id="help_text">
+        <div class="well well-small">
+            <p>TODO: HELP TEXT HERE!</p>
+        </div>
+    </div>
+    
+    <div id="loading">Loading Data...</div>
+    <div id="results_heroes">
+        <h2>Heroes</h2>
+        <table class="table table-bordered" id="results_heroes_table">
+            <thead>
+                <th>Player Name</th>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    <div id="results_players">
+        <h2>Players</h2>
+        <table class="table table-bordered" id="results_players_table">
+            <thead>
+                <th>Player Name</th>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    <div id="results_matches">
+        <h2>Matches</h2>
+        <table class="table table-bordered" id="results_matches_table">
+            <thead>
+                <th>Player Name</th>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    
+{% endblock %}
+
+{% block scripts %}
+    <script src="{% static 'js/spin.min.js' %}"></script>
+    <script src="{% static 'js/search.js' %}"></script>
+    <script>
+    
+    </script>
+    <script>
+    $('#results_players').hide();
+    $('#results_matches').hide();
+    $('#results_heroes').hide();
+    $('#help_text').show();
+    var done_matches = done_players = done_heroes = false;
+    $(document).ready(function () {
+    	$("#loading").spin();
+    	ajax_request = {'search_request': $('#search_request').val()};
+    	Dajaxice.dotastats.search_matches(Dajax.process, ajax_request);
+    	Dajaxice.dotastats.search_players(Dajax.process, ajax_request);
+    	Dajaxice.dotastats.search_heroes(Dajax.process, ajax_request);
+	});
+    function parse_matches(data) {
+    	$('#results_matches_table > tbody:last').append(data);
+    	$('#results_matches').show();
+    	done_matches = true;
+    	remove_spinner();
+    	return;
+    }
+    
+    function parse_players(data) {
+    	$('#results_players_table > tbody:last').append(data);
+        $('#results_players').show();
+        done_players = true;
+        remove_spinner();
+        return;
+    }
+    
+    function parse_heroes(data) {
+    	$('#results_heroes_table > tbody:last').append(data);
+        $('#results_heroes').show();
+        done_heroes = true;
+        remove_spinner();
+        return;
+    }
+    
+    function remove_spinner() {
+    	if(done_matches && done_players && done_heroes) { // All loading done, remove spinner.
+    		$("#loading").spin(false);
+    	}
+    	return;
+    }
+    
+    
+    </script>
 {% endblock %}
