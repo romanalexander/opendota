@@ -1,18 +1,51 @@
 from django.db import models
+from datetime import datetime
 
-class SteamAccount(): # Not a DB model, used for caching purposes.
-    def __init__(self, values_dict):
-        self.values_dict = values_dict
+class SteamPlayer(models.Model):
+    steamid = models.BigIntegerField(primary_key=True, unique=True)
+    last_refresh = models.DateTimeField(auto_now=True, auto_now_add=True, db_index=True) # Last time this player was checked.
+    personaname = models.TextField(db_index=True)
+    profileurl = models.TextField(blank=True)
+    avatar = models.TextField(blank=True)
+    avatarmedium = models.TextField(blank=True)
+    avatarfull = models.TextField(blank=True)
+    lastlogoff = models.DateTimeField(blank=True) # UNIX time of player last seen.
     
-    """def __getattr__(self, attr):
-        if attr in self.values_dict:
-            return self.values[attr]
-        raise AttributeError("Object has no attribute %r" % attr)"""
+    def get_steam_name(self):
+        return self.personaname
+    
+    @staticmethod
+    def from_json_response(json):
+        return SteamPlayer(steamid = json.get('steamid'),
+                           personaname = json.get('personaname'),
+                           profileurl = json.get('profileurl'),
+                           avatar = json.get('avatar'),
+                           avatarmedium = json.get('avatarmedium'),
+                           avatarfull = json.get('avatarfull'),
+                           lastlogoff = datetime.fromtimestamp(json.get('lastlogoff')))
         
 class Heroes(models.Model):
     hero_id = models.IntegerField(primary_key=True) # From the client files.
     client_name = models.TextField()
     dota2_name = models.TextField()
+    
+    def __unicode__(self):
+        return self.dota2_name
+    
+    def get_code_name(self):
+        return self.client_name[14:] #Ex:  npc_dota_hero_chaos_knight
+
+# Long-running queue of matches to look up.
+class MatchHistoryQueue(models.Model):
+    match_id = models.BigIntegerField(primary_key=True, unique=True)
+    last_refresh = models.DateTimeField(auto_now=True, auto_now_add=True) # Queue will empty FIFO
+    start_time = models.DateTimeField() # UNIX Timestamp
+    lobby_type = models.DateTimeField()
+class MatchHistoryQueuePlayers(models.Model):
+    match_history_queue = models.ForeignKey('MatchHistoryQueue')
+    account_id = models.BigIntegerField()
+    player_slot = models.IntegerField()
+    hero_id = models.ForeignKey('Heroes')
 
 class MatchDetails(models.Model):
     match_id = models.BigIntegerField(primary_key=True, unique=True)
@@ -20,7 +53,7 @@ class MatchDetails(models.Model):
     season = models.IntegerField()
     radiant_win = models.BooleanField()
     duration = models.IntegerField() # Seconds of match
-    starttime = models.BigIntegerField() # UNIX Timestamp
+    starttime = models.DateTimeField() # UNIX Timestamp
     tower_status_radiant = models.IntegerField()
     tower_status_dire = models.IntegerField()
     barracks_status_radiant = models.IntegerField()
@@ -37,14 +70,35 @@ class MatchDetails(models.Model):
     def __unicode__(self):
         return 'MatchID: ' + self.match_id
     
+    @staticmethod
+    def from_json_response(json):
+        return MatchDetails(
+            match_id = json['match_id'],
+            season = json['season'],
+            radiant_win = json['radiant_win'],
+            duration = json['duration'],
+            starttime = datetime.fromtimestamp(json['starttime']),
+            tower_status_radiant = json['tower_status_radiant'],
+            tower_status_dire = json['tower_status_dire'],
+            barracks_status_radiant = json['barracks_status_radiant'],
+            barracks_status_dire = json['barracks_status_dire'],
+            cluster = json['cluster'],
+            first_blood_time = json['first_blood_time'],
+            lobby_type = json['lobby_type'],
+            human_players = json['human_players'],
+            leagueid = json['leagueid'],
+            positive_votes = json['positive_votes'],
+            negative_votes = json['negative_votes'],
+            game_mode = json['game_mode'])
+    
     class Meta:
         ordering = ('match_id',)
     
 class MatchDetailsPlayerEntry(models.Model):
     match_details = models.ForeignKey('MatchDetails')
-    account_id = models.BigIntegerField(db_index=True)
+    account_id = models.ForeignKey(SteamPlayer, related_name='+', db_column='account_id', null=True)
     player_slot = models.IntegerField()
-    hero_id = models.IntegerField()
+    hero_id = models.ForeignKey('Heroes', related_name='+', db_column='hero_id')
     item_0 = models.IntegerField()
     item_1 = models.IntegerField()
     item_2 = models.IntegerField()
@@ -67,9 +121,39 @@ class MatchDetailsPlayerEntry(models.Model):
     level = models.IntegerField()
     
     def get_steam_name(self):
-        return steamapi.GetPlayerName(self.account_id)
+        return steamapi.GetPlayerName(self.account_id_id)
+        
+    @staticmethod
+    def from_json_response(match_details, json):
+        return MatchDetailsPlayerEntry(
+                match_details = match_details,
+                account_id_id=steamapi.convertAccountNumbertoSteam64(json['account_id']), # Store all data in steam64. No reason to have Steam32.
+                player_slot=json['player_slot'],
+                hero_id_id=json['hero_id'],
+                item_0=json['item_0'],
+                item_1=json['item_1'],
+                item_2=json['item_2'],
+                item_3=json['item_3'],
+                item_4=json['item_4'],
+                item_5=json['item_5'],
+                kills=json['kills'],
+                deaths=json['deaths'],
+                assists=json['assists'],
+                leaver_status=json['leaver_status'],
+                gold=json['gold'],
+                last_hits=json['last_hits'],
+                denies=json['denies'],
+                gold_per_min=json['gold_per_min'],
+                xp_per_min=json['xp_per_min'],
+                gold_spent=json['gold_spent'],
+                hero_damage=json['hero_damage'],
+                tower_damage=json['tower_damage'],
+                hero_healing=json['hero_healing'],
+                level=json['level'])
         
     class Meta:
+        unique_together = (('match_details', 'hero_id', 'player_slot',),)
         ordering = ('player_slot',)
         
+
 from dotastats.json import steamapi

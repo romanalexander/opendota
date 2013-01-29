@@ -20,6 +20,7 @@
     <div id="loading">Loading Data...</div>
     <div id="results_heroes">
         <h2>Heroes</h2>
+        <div id="results_heroes_error"></div>
         <table class="table table-bordered" id="results_heroes_table">
             <thead>
                 <th>Player Name</th>
@@ -29,6 +30,7 @@
     </div>
     <div id="results_players">
         <h2>Players</h2>
+        <div id="results_heroes_players"></div>
         <table class="table table-bordered" id="results_players_table">
             <thead>
                 <th>Player Name</th>
@@ -38,6 +40,7 @@
     </div>
     <div id="results_matches">
         <h2>Matches</h2>
+        <div id="results_heroes_matches"></div>
         <table class="table table-bordered" id="results_matches_table">
             <thead>
                 <th>Player Name</th>
@@ -94,6 +97,7 @@
     function remove_spinner() {
     	if(done_matches && done_players && done_heroes) { // All loading done, remove spinner.
     		$("#loading").spin(false);
+    		$("#loading").hide();
     	}
     	return;
     }

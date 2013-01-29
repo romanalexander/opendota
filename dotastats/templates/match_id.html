@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load staticfiles %}
 
 {% block content %}
     {% include 'includes/searchbar_snippet.html' %}
@@ -18,15 +19,15 @@
                     <th>LH / D</th>
                 </thead>
                 <tbody>
-                    {% for playerentry in  team.all %}
-                        <tr>{# Makes leavers appear in red. #}
-                        <td>{{ playerentry.hero_id }}</td><!-- TODO MAKE ICON -->
+                    {% for playerentry in team.all %}
+                        <tr>
+                        <td><img src="{% static 'img/miniheroes/'|add:playerentry.hero_id.get_code_name|add:'.png' %}" alt="{{ playerentry.hero_id }}"></td><!-- TODO MAKE ICON -->
                         <td>{{ playerentry.level }}</td>
                         <td>{% if playerentry.leaver_status > 0 %}
                             <i class="icon-remove"> </i>
                             {% endif %}
-                            {% if playerentry.account_id != 4294967295 %}
-                            <a href="http://steamcommunity.com/profiles/{{ playerentry.account_id }}">{{ playerentry.get_steam_name }}</a>
+                            {% if playerentry.account_id_d != 4294967295 and playerentry.account_id != None %}
+                            <img src="{{ playerentry.avatar }}"><a href="{{ playerentry.account_id.profileurl }}">{{ playerentry.get_steam_name }}</a>
                             {% else %}
                             <em>{{ playerentry.get_steam_name}}</em>
                             {% endif %}

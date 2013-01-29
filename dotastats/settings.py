@@ -122,6 +122,8 @@ INSTALLED_APPS = (
     'dotastats',
     'dajaxice',
     'dajax',
+    'kombu.transport.django',
+    'djcelery',
 )
 
 # A sample logging configuration. The only tangible logging
@@ -171,13 +173,6 @@ CACHES = {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
         'LOCATION': 'cache_default',
     },
-    'steam_accounts': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'cache_steam_accounts',
-        'TIMEOUT': 3600,
-        'MAX_ENTRIES': 5000,
-        'KEY_PREFIX': 'steamid_',
-    },
 }
 
 # Steam Web API Key (generate new before project deployments)
@@ -202,3 +197,10 @@ OPENID_SSO_SERVER_URL = 'https://steamcommunity.com/openid'
 import dj_database_url
 if not DEBUG: # In production, use heroku postgres. 
     DATABASES['default'] =  dj_database_url.config()
+
+BROKER_BACKEND = 'django'
+CELERY_ALWAYS_EAGER = True # TODO: REMOVE ME
+CELERY_DEFAULT_RATE_LIMIT = '1/s'
+import djcelery
+djcelery.setup_loader()
+

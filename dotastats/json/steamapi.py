@@ -2,9 +2,8 @@ import simplejson as json
 import urllib
 import urllib2
 from django.conf import settings
-from django.core.cache import get_cache
 from django.core.exceptions import ObjectDoesNotExist
-from dotastats.models import SteamAccount, MatchDetails, MatchDetailsPlayerEntry
+from dotastats.models import MatchDetails, MatchDetailsPlayerEntry, SteamPlayer
 
 # API Key macro from settings file.
 API_KEY = settings.STEAM_API_KEY
@@ -30,58 +29,20 @@ def GetMatchHistory(**kargs):
     return GetMatchHistoryJson(**kargs)
 
 def GetMatchDetails(matchid):
+    bulk_create = []
+    account_list = []
     try:
         match_details = MatchDetails.objects.get(match_id=matchid)
     except ObjectDoesNotExist:
         json_data = GetMatchDetailsJson(matchid)
         json_player_data = json_data['players']
-        match_details = MatchDetails( # Don't use raw JSON-dict data. Bad things could happen. This way is verbose, yet correct.
-            match_id = json_data['match_id'],
-            season = json_data['season'],
-            radiant_win = json_data['radiant_win'],
-            duration = json_data['duration'],
-            starttime = json_data['starttime'],
-            tower_status_radiant = json_data['tower_status_radiant'],
-            tower_status_dire = json_data['tower_status_dire'],
-            barracks_status_radiant = json_data['barracks_status_radiant'],
-            barracks_status_dire = json_data['barracks_status_dire'],
-            cluster = json_data['cluster'],
-            first_blood_time = json_data['first_blood_time'],
-            lobby_type = json_data['lobby_type'],
-            human_players = json_data['human_players'],
-            leagueid = json_data['leagueid'],
-            positive_votes = json_data['positive_votes'],
-            negative_votes = json_data['negative_votes'],
-            game_mode = json_data['game_mode'])
-        match_details.save()
+        match_details = MatchDetails.from_json_response(json_data)
+        match_details.save()        
         for json_player in json_player_data:
-            match_details.matchdetailsplayerentry_set.create(
-                account_id=convertAccountNumbertoSteam64(json_player['account_id']), # Store all data in steam64. No reason to have Steam32.
-                player_slot=json_player['player_slot'],
-                hero_id=json_player['hero_id'],
-                item_0=json_player['item_0'],
-                item_1=json_player['item_1'],
-                item_2=json_player['item_2'],
-                item_3=json_player['item_3'],
-                item_4=json_player['item_4'],
-                item_5=json_player['item_5'],
-                kills=json_player['kills'],
-                deaths=json_player['deaths'],
-                assists=json_player['assists'],
-                leaver_status=json_player['leaver_status'],
-                gold=json_player['gold'],
-                last_hits=json_player['last_hits'],
-                denies=json_player['denies'],
-                gold_per_min=json_player['gold_per_min'],
-                xp_per_min=json_player['xp_per_min'],
-                gold_spent=json_player['gold_spent'],
-                hero_damage=json_player['hero_damage'],
-                tower_damage=json_player['tower_damage'],
-                hero_healing=json_player['hero_healing'],
-                level=json_player['level'])
-    account_list = []
+            bulk_create.append(MatchDetailsPlayerEntry.from_json_response(match_details, json_player))
+        match_details.matchdetailsplayerentry_set.bulk_create(bulk_create)
     for player_entry in match_details.matchdetailsplayerentry_set.all():
-        account_list.append(player_entry.account_id)
+        account_list.append(player_entry.account_id_id)
     GetPlayerNames(account_list) # Make sure names are loaded into cache.
     
     return match_details
@@ -129,53 +90,51 @@ def GetMatchDetailsJson(match_id):
 # Converts the 'account number' to Steam64. Does not convert PRIVATE players.
 def convertAccountNumbertoSteam64(steamID):
     if steamID == 4294967295:
-        return 4294967295
+        return None
     else:
         return steamID + 76561197960265728
     
 # Does the opposite of convertAccountNumbertoSteam64 and converts the Steam64 down to AccountNumber. 
 def convertSteam64toAccountNumber(steamID):
     if steamID == 4294967295:
-        return 4294967295
+        return None
     else:
         return steamID - 76561197960265728
 
 # Only retreives name from cache. Doesn't load into cache or perform WebAPI lookups.
 def GetPlayerName(player_id):
-    cache = get_cache('steam_accounts')
-    if player_id == 4294967295:
+    if player_id == 4294967295 or player_id == None:
         return 'Private'
-    if cache.get(player_id) == None:
+    try: 
+        return SteamPlayer.objects.get(pk=player_id).get_steam_name()
+    except ObjectDoesNotExist:
         return 'Critical Cache Failure'
-    else:
-        return cache.get(player_id).values_dict['personaname']
 
 # Loads names into cache.
 # Returns: Dict of player accountids, only retreives names that aren't in the cache.
 def GetPlayerNames(player_ids):
     return_dict = dict({4294967295: 'PRIVATE',})
     try:
-        cache = get_cache('steam_accounts') # Cache used to store SteamAccounts.
         request_list = []
-        cache.set(4294967295, 'PRIVATE')
         if type(player_ids) is not list: # Always make sure player_ids is a list.
-            players_ids = [player_ids,]
-            
+            player_ids = [player_ids,]
         for player_id in player_ids:
             if player_id == 4294967295: # Invalid playerid, assume private
                 continue
-            player = cache.get(player_id)
-            if player == None: # Not in cache. Refresh cache.
+            try:
+                player = SteamPlayer.objects.get(pk=player_id)
+            except ObjectDoesNotExist:
                 request_list.append(player_id)
             else:
                 return_dict.update({player_id: player})
         if len(request_list) != 0:
             response = urllib2.urlopen(STEAM_USER_NAMES + '?key=' + API_KEY + '&steamids=' + ','.join(str(req) for req in request_list)) # TODO: Clean me for clarity.
             json_data = json.loads(response.read())['response']
+            bulk_create = []
             for player in json_data['players']:
-                player_obj = SteamAccount(player)
-                cache.set(player_obj.values_dict['steamid'], player_obj)
-                return_dict.update({player_id: player_obj})
+                steamplayer = SteamPlayer.from_json_response(player)
+                bulk_create.append(steamplayer)
+            SteamPlayer.objects.bulk_create(bulk_create)
             response.close()
     except urllib2.HTTPError, e:
         if e.code == 400:
