@@ -74,16 +74,14 @@ def GetMatchHistory(**kargs):
                         account_list.append(convertAccountNumbertoSteam64(json_player.get('account_id', None)))
                     create_queue.append((match_history, bulk_create))
                 GetPlayerNames(account_list) # Loads accounts into cache
-                for match_history, bulk_create in create_queue:
-                    match_history.matchhistoryqueueplayers_set.bulk_create(bulk_create)
+                for create_match_history, bulk_create_players in create_queue:
+                    create_match_history.matchhistoryqueueplayers_set.bulk_create(bulk_create_players)
             transaction.commit()
         except:
             transaction.rollback()
             raise
         return_history = MatchHistoryQueue.objects.all().reverse()[:10] 
         cache.set('match_history_refresh', return_history, 300) # Timeout to refresh match history.
-        
-    transaction.commit()
     return return_history
 
 @transaction.commit_manually
