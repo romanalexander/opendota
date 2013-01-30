@@ -49,10 +49,10 @@
                         <td><img src="{% static 'img/miniheroes/'|add:playerentry.hero_id.get_code_name|add:'.png' %}" alt="{{ playerentry.hero_id }}"></td><!-- TODO MAKE ICON -->
                         <td>{{ playerentry.level }}</td>
                         <td>
-                            {% if playerentry.leaver_status == 2 %}
+                            {% if playerentry.leaver_status == 3 %}
                             <i class="icon-remove"> </i>
                             {% endif %}
-                            {% if playerentry.leaver_status == None %}
+                            {% if playerentry.is_bot %}
                             <em>Bot</em>
                             {% elif playerentry.account_id_d != 4294967295 and playerentry.account_id != None %}
                             <img src="{{ playerentry.avatar }}"><a href="{{ playerentry.account_id.profileurl }}">{{ playerentry.get_steam_name }}</a>
@@ -87,10 +87,11 @@
                 </tbody>
             </table><br>
         {% endfor %}
-        
+    {{ match.drop_json_debug }}<br>    
         
     {% else %}
         <p>No match found.</p>
     {% endif %}
+    
     
 {% endblock %}

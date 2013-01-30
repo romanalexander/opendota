@@ -2,7 +2,7 @@
 
 {% block content %}
     {% include 'includes/searchbar_snippet.html' %}
-    {% for match in matches %}
-        MatchID: <a href="{% url matches_id match_id=match.match_id %}">{{ match.match_id }}</a><br>
+    {% for match in match_history %}
+        {{ match.get_lobby_type }}: <a href="{% url matches_id match_id=match.match_id %}">{{ match.match_id }}</a><br>
     {% endfor %}
 {% endblock %}

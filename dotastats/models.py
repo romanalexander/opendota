@@ -1,5 +1,6 @@
 from django.db import models
 from datetime import datetime
+from django.core import serializers
 
 class SteamPlayer(models.Model):
     steamid = models.BigIntegerField(primary_key=True, unique=True)
@@ -57,6 +58,9 @@ class MatchHistoryQueue(models.Model):
     start_time = models.DateTimeField() # UNIX Timestamp
     lobby_type = models.IntegerField()
     
+    def get_lobby_type(self):
+        return get_lobby_type(self.lobby_type)
+    
     @staticmethod
     def from_json_response(json): 
         return MatchHistoryQueue(
@@ -69,19 +73,20 @@ class MatchHistoryQueuePlayers(models.Model):
     account_id = models.ForeignKey(SteamPlayer, related_name='+', db_column='account_id', null=True)
     player_slot = models.IntegerField()
     hero_id = models.ForeignKey('Heroes', related_name='+', db_column='hero_id')
-    
+    # Custom tracking field
+    is_bot = models.BooleanField(default=False)
     class Meta:
         unique_together = (('match_history_queue', 'hero_id', 'player_slot',),) # Every match, only one hero_id per player slot.
         ordering = ('player_slot',)
     
     @staticmethod
     def from_json_response(match_history_queue, json):
-        print(steamapi.convertAccountNumbertoSteam64(json['account_id']))
         return MatchHistoryQueuePlayers(
             match_history_queue=match_history_queue,
-            account_id_id=steamapi.convertAccountNumbertoSteam64(json['account_id']), # Store all data in steam64. No reason to have Steam32.
+            account_id_id=steamapi.convertAccountNumbertoSteam64(json.get('account_id', None)), # Store all data in steam64. No reason to have Steam32.
             player_slot=json['player_slot'],
-            hero_id_id=json['hero_id'],)
+            hero_id_id=json['hero_id'],
+            is_bot=True if json.get('account_id', None) == None else False,)
 
 """ Courtesy Cyborgmatt
 "dota_game_mode_0"                                                "ALL PICK"
@@ -99,17 +104,47 @@ class MatchHistoryQueuePlayers(models.Model):
 "dota_game_mode_12"                                                "LEAST PLAYED"
 "dota_game_mode_13"                                                "NEW PLAYER POOL"
 """
-def get_game_type(lobby_type): # TODO: Finish & Localize me.
-        if lobby_type == 0:
-            return 'All Pick'
-        elif lobby_type == 1:
-            return 'Single Draft'
-        elif lobby_type == 2:
-            return 'All Random'
-        elif lobby_type == 3:
-            return 'Random Draft'
-        else:
-            return str(lobby_type) 
+def get_game_type(game_mode): # TODO: Finish & Localize me.
+    if game_mode == 0:
+        return 'All Pick'
+    elif game_mode == 1:
+        return 'Single Draft'
+    elif game_mode == 2:
+        return 'All Random'
+    elif game_mode == 3:
+        return 'Random Draft'
+    elif game_mode == 4:
+        return "Captain's Draft"
+    elif game_mode == 5:
+        return "Captain's Mode"
+    elif game_mode == 6:
+        return 'Death Mode'
+    elif game_mode == 7:
+        return 'Diretide'
+    elif game_mode == 8:
+        return "Reverse Captain's Mode"
+    elif game_mode == 9:
+        return 'The Greeviling'
+    elif game_mode == 10:
+        return 'Tutorial'
+    elif game_mode == 11:
+        return 'Mid Only'
+    elif game_mode == 12:
+        return 'Least Played'
+    elif game_mode == 13:
+        return 'New Player Pool'
+    else:
+        return str(game_mode) 
+        
+def get_lobby_type(lobby_type):
+    if lobby_type == 0:
+        return 'Public Matchmaking'
+    elif lobby_type == 1:
+        return 'Bot Match'
+    elif lobby_type == 4:
+        return 'Private?'
+    else:
+        return str(lobby_type)
 
 class MatchDetails(models.Model):
     match_id = models.BigIntegerField(primary_key=True, unique=True)
@@ -132,10 +167,13 @@ class MatchDetails(models.Model):
     game_mode = models.IntegerField()
     
     def get_game_type(self):
-        return get_game_type(self.lobby_type)
+        return get_game_type(self.game_mode)
     
     def __unicode__(self):
         return 'MatchID: ' + self.match_id
+    
+    def drop_json_debug(self):
+        return serializers.serialize("json", [self], indent=4)
     
     @staticmethod
     def from_json_response(json):
@@ -186,6 +224,8 @@ class MatchDetailsPlayerEntry(models.Model):
     tower_damage = models.IntegerField()
     hero_healing = models.IntegerField()
     level = models.IntegerField()
+    # Custom tracking fields
+    is_bot = models.BooleanField(default=False)
     
     def get_steam_name(self):
         return steamapi.GetPlayerName(self.account_id_id)
@@ -194,7 +234,7 @@ class MatchDetailsPlayerEntry(models.Model):
     def from_json_response(match_details, json):
         return MatchDetailsPlayerEntry(
                 match_details = match_details,
-                account_id_id=steamapi.convertAccountNumbertoSteam64(json['account_id']), # Store all data in steam64. No reason to have Steam32.
+                account_id_id=steamapi.convertAccountNumbertoSteam64(json.get('account_id', None)), # Store all data in steam64. No reason to have Steam32.
                 player_slot=json['player_slot'],
                 hero_id_id=json['hero_id'],
                 item_0_id=json['item_0'],
@@ -216,7 +256,8 @@ class MatchDetailsPlayerEntry(models.Model):
                 hero_damage=json['hero_damage'],
                 tower_damage=json['tower_damage'],
                 hero_healing=json['hero_healing'],
-                level=json['level'])
+                level=json['level'],
+                is_bot=True if json.get('account_id', None) == None else False,)
         
     class Meta:
         unique_together = (('match_details', 'hero_id', 'player_slot',),) # Every match, only one hero_id per player slot.

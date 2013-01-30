@@ -44,7 +44,7 @@ matches_requested=<n> # Defaults is 25 matches, this can limit to less
 """
         [leaver_status] => NULL - Player is a bot.
         
-        [leaver_status] => 2 - Player has abandoned the game.
+        [leaver_status] => 3 - Player has abandoned the game.
         
         [leaver_status] => 1 - Player has left after the game has become safe to leave.
         
@@ -70,7 +70,7 @@ def GetMatchHistory(**kargs):
                     match_history.save() # Save here so the temporary match is created.
                     for json_player in json_player_data:
                         bulk_create.append(MatchHistoryQueuePlayers.from_json_response(match_history, json_player))
-                        account_list.append(convertAccountNumbertoSteam64(json_player['account_id']))
+                        account_list.append(convertAccountNumbertoSteam64(json_player.get('account_id', None)))
                     match_history.matchhistoryqueueplayers_set.bulk_create(bulk_create)
                 GetPlayerNames(account_list) # Loads accounts into cache
             transaction.commit()
@@ -150,14 +150,14 @@ def GetMatchDetailsJson(match_id):
 
 # Converts the 'account number' to Steam64. Does not convert PRIVATE players.
 def convertAccountNumbertoSteam64(steamID):
-    if steamID == 4294967295:
+    if steamID == 4294967295 or steamID == None:
         return None
     else:
         return steamID + 76561197960265728
     
 # Does the opposite of convertAccountNumbertoSteam64 and converts the Steam64 down to AccountNumber. 
 def convertSteam64toAccountNumber(steamID):
-    if steamID == 4294967295:
+    if steamID == 4294967295 or steamID == None:
         return None
     else:
         return steamID - 76561197960265728
