@@ -61,6 +61,9 @@
             <b>DISCLAIMER!</b> We are still in development. Data displayed during this period may not be accurate. Sorry!
         </div>
         <div class="container" style="min-height: 700px;">
+            {% if error %}
+            <div class="alert alert-error">{{ error }}</div>
+            {% endif %}
             {% block content %}
             <div class="well well-small">
                 <p>TODO.</p>
