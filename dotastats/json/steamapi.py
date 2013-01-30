@@ -4,6 +4,7 @@ import urllib2
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from dotastats.models import MatchDetails, MatchDetailsPlayerEntry, SteamPlayer
+from django.db import transaction
 
 # API Key macro from settings file.
 API_KEY = settings.STEAM_API_KEY
@@ -28,23 +29,28 @@ matches_requested=<n> # Defaults is 25 matches, this can limit to less
 def GetMatchHistory(**kargs):
     return GetMatchHistoryJson(**kargs)
 
+@transaction.commit_manually
 def GetMatchDetails(matchid):
     bulk_create = []
     account_list = []
+    match_details = None
     try:
-        match_details = MatchDetails.objects.get(match_id=matchid)
-    except ObjectDoesNotExist:
-        json_data = GetMatchDetailsJson(matchid)
-        json_player_data = json_data['players']
-        match_details = MatchDetails.from_json_response(json_data)
-        match_details.save()        
-        for json_player in json_player_data:
-            bulk_create.append(MatchDetailsPlayerEntry.from_json_response(match_details, json_player))
-        match_details.matchdetailsplayerentry_set.bulk_create(bulk_create)
-    for player_entry in match_details.matchdetailsplayerentry_set.all():
-        account_list.append(player_entry.account_id_id)
-    GetPlayerNames(account_list) # Make sure names are loaded into cache.
-    
+        try:
+            match_details = MatchDetails.objects.get(match_id=matchid)
+        except ObjectDoesNotExist:
+            json_data = GetMatchDetailsJson(matchid)
+            json_player_data = json_data['players']
+            match_details = MatchDetails.from_json_response(json_data)
+            match_details.save()        
+            for json_player in json_player_data:
+                bulk_create.append(MatchDetailsPlayerEntry.from_json_response(match_details, json_player))
+                account_list.append(convertAccountNumbertoSteam64(json_player['account_id']))
+        GetPlayerNames(account_list) # Make sure names are loaded into cache.
+        if match_details != None:
+            match_details.matchdetailsplayerentry_set.bulk_create(bulk_create)
+        transaction.commit()
+    except:
+        transaction.rollback()
     return match_details
 
 def GetMatchHistoryJson(**kargs):
