@@ -59,6 +59,33 @@ class MatchHistoryQueuePlayers(models.Model):
     player_slot = models.IntegerField()
     hero_id = models.ForeignKey('Heroes', related_name='+')
 
+def get_game_type(lobby_type): # TODO: Finish & Localize me.
+        if lobby_type == 0:
+            return 'All Pick'
+        elif lobby_type == 1:
+            return 'Single Draft'
+        elif lobby_type == 2:
+            return 'All Random'
+        elif lobby_type == 3:
+            return 'Random Draft'
+        else:
+            return str(lobby_type) 
+
+"dota_game_mode_0"                                                "ALL PICK"
+"dota_game_mode_1"                                                "SINGLE DRAFT"
+"dota_game_mode_2"                                                "ALL RANDOM"
+"dota_game_mode_3"                                                "RANDOM DRAFT"
+"dota_game_mode_4"                                                "CAPTAINS DRAFT"
+"dota_game_mode_5"                                                "CAPTAINS MODE"
+"dota_game_mode_6"                                                "DEATH MODE"
+"dota_game_mode_7"                                                "DIRETIDE"
+"dota_game_mode_8"                                                "REVERSE CAPTAINS MODE"
+"dota_game_mode_9"                                                "The Greeviling"
+"dota_game_mode_10"                                                "TUTORIAL"
+"dota_game_mode_11"                                                "MID ONLY"
+"dota_game_mode_12"                                                "LEAST PLAYED"
+"dota_game_mode_13"                                                "NEW PLAYER POOL"
+
 class MatchDetails(models.Model):
     match_id = models.BigIntegerField(primary_key=True, unique=True)
     last_refresh = models.DateTimeField(auto_now=True, auto_now_add=True) # Last time this data was accessed for freshness.
@@ -78,6 +105,9 @@ class MatchDetails(models.Model):
     positive_votes = models.IntegerField()
     negative_votes = models.IntegerField()
     game_mode = models.IntegerField()
+    
+    def get_game_type(self):
+        return get_game_type(self.lobby_type)
     
     def __unicode__(self):
         return 'MatchID: ' + self.match_id
@@ -120,7 +150,7 @@ class MatchDetailsPlayerEntry(models.Model):
     kills = models.IntegerField()
     deaths = models.IntegerField()
     assists = models.IntegerField()
-    leaver_status = models.IntegerField()
+    leaver_status = models.IntegerField(null=True)
     gold = models.IntegerField()
     last_hits = models.IntegerField()
     denies = models.IntegerField()
@@ -164,8 +194,7 @@ class MatchDetailsPlayerEntry(models.Model):
                 level=json['level'])
         
     class Meta:
-        unique_together = (('match_details', 'hero_id', 'player_slot',),)
+        unique_together = (('match_details', 'hero_id', 'player_slot',),) # Every match, only one hero_id per player slot.
         ordering = ('player_slot',)
         
-
 from dotastats.json import steamapi

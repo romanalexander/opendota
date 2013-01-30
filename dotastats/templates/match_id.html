@@ -6,25 +6,41 @@
 .dota_item {
     width: 62px; height: 32px;
 }
+.dota_avatar {
+    width: 32px;
+}
+.dota_level {
+    width: 1em;
+}
+.dota_player_name {
+    width: 15em;
+}
+.dota_kda {
+    width: 10em;
+}
+.dota_lhd {
+    width: 10em;
+}
 </style>
 {% endblock %}
 
 {% block content %}
     {% include 'includes/searchbar_snippet.html' %}
     {% if match %}
+        <h1>{{ match.get_game_type }}</h1><hr>
         {% for team in teams %}
             {% if forloop.counter == 1%}
-                <h1>Radiant</h1>
+                <h3>Radiant - {% if match.radiant_win %}Victory{% else %}Defeat{% endif %}</h3>
             {% else %}
-                <h1>Dire</h1>
+                <h3>Dire - {% if match.radiant_win %}Defeat{% else %}Victory{% endif %}</h3>
             {% endif %}
             <table class="table table-bordered">
                 <thead>
-                    <th>Hero</th>
-                    <th>Level</th>
-                    <th>Player Name</th>
-                    <th>K / D / A</th>
-                    <th>LH / D</th>
+                    <th class="dota_avatar">Hero</th>
+                    <th class="dota_level">Level</th>
+                    <th class="dota_player_name">Player Name</th>
+                    <th class="dota_kda">K / D / A</th>
+                    <th class="dota_lhd">LH / D</th>
                     <th>Items</th>
                 </thead>
                 <tbody>
@@ -32,16 +48,19 @@
                     <tr>
                         <td><img src="{% static 'img/miniheroes/'|add:playerentry.hero_id.get_code_name|add:'.png' %}" alt="{{ playerentry.hero_id }}"></td><!-- TODO MAKE ICON -->
                         <td>{{ playerentry.level }}</td>
-                        <td>{% if playerentry.leaver_status > 0 %}
+                        <td>
+                            {% if playerentry.leaver_status == 2 %}
                             <i class="icon-remove"> </i>
                             {% endif %}
-                            {% if playerentry.account_id_d != 4294967295 and playerentry.account_id != None %}
+                            {% if playerentry.leaver_status == None %}
+                            <em>Bot</em>
+                            {% elif playerentry.account_id_d != 4294967295 and playerentry.account_id != None %}
                             <img src="{{ playerentry.avatar }}"><a href="{{ playerentry.account_id.profileurl }}">{{ playerentry.get_steam_name }}</a>
                             {% else %}
                             <em>{{ playerentry.get_steam_name}}</em>
                             {% endif %}
                         </td>
-                        <td>{{ playerentry.kills }}/{{ playerentry.deaths }}/{{ playerentry.assists }}</td>
+                        <td>{{ playerentry.kills }} / {{ playerentry.deaths }} / {{ playerentry.assists }}</td>
                         <td>{{ playerentry.last_hits }} / {{ playerentry.denies }}</td>
                         <td>
                             {% if playerentry.item_0.get_code_name and playerentry.item_0.get_code_name != 'None' %}
@@ -66,7 +85,7 @@
                     </tr>
                     {% endfor %}
                 </tbody>
-            </table>
+            </table><br>
         {% endfor %}
         
         
