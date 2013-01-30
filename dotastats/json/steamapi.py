@@ -3,8 +3,10 @@ import urllib
 import urllib2
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
-from dotastats.models import MatchDetails, MatchDetailsPlayerEntry, SteamPlayer
+from dotastats.models import MatchDetails, MatchDetailsPlayerEntry, SteamPlayer, MatchHistoryQueue, MatchHistoryQueuePlayers
 from django.db import transaction
+from django.core.cache import cache
+from django.db import connection
 
 # API Key macro from settings file.
 API_KEY = settings.STEAM_API_KEY
@@ -23,11 +25,61 @@ league_id=<id> # matches for a particular league
 start_at_match_id=<id> # Start the search at the indicated match id, descending
 matches_requested=<n> # Defaults is 25 matches, this can limit to less
 """
+"""
+        "dota_game_mode_0"                                                "ALL PICK"
+        "dota_game_mode_1"                                                "SINGLE DRAFT"
+        "dota_game_mode_2"                                                "ALL RANDOM"
+        "dota_game_mode_3"                                                "RANDOM DRAFT"
+        "dota_game_mode_4"                                                "CAPTAINS DRAFT"
+        "dota_game_mode_5"                                                "CAPTAINS MODE"
+        "dota_game_mode_6"                                                "DEATH MODE"
+        "dota_game_mode_7"                                                "DIRETIDE"
+        "dota_game_mode_8"                                                "REVERSE CAPTAINS MODE"
+        "dota_game_mode_9"                                                "The Greeviling"
+        "dota_game_mode_10"                                                "TUTORIAL"
+        "dota_game_mode_11"                                                "MID ONLY"
+        "dota_game_mode_12"                                                "LEAST PLAYED"
+        "dota_game_mode_13"                                                "NEW PLAYER POOL"
+"""
+"""
+        [leaver_status] => NULL - Player is a bot.
+        
+        [leaver_status] => 2 - Player has abandoned the game.
+        
+        [leaver_status] => 1 - Player has left after the game has become safe to leave.
+        
+        [leaver_status] => 0 - Player has stayed for the entire match.
+"""
 
-# Takes in GetMatchHistoryJson, hits DB cache or asks WebAPI.
-# TODO: Cache results. (Don't rely on page cache only.)
+@transaction.commit_manually
 def GetMatchHistory(**kargs):
-    return GetMatchHistoryJson(**kargs)
+    return_history = cache.get('match_history_refresh', None) 
+    if return_history == None:
+        try:
+            json_data = GetMatchHistoryJson(**kargs)
+            with connection.constraint_checks_disabled():
+                for match in json_data['matches']:
+                    if(len(match['players']) < 1): # Don't log matches without players.
+                        continue
+                    bulk_create = []
+                    account_list = []
+                    json_player_data = match['players']
+                    if MatchDetails.objects.filter(pk=match['match_id']).exists() or MatchHistoryQueue.objects.filter(pk=match['match_id']).exists():
+                        continue # Object in queue or already created. Can ignore for now.
+                    match_history = MatchHistoryQueue.from_json_response(match)
+                    match_history.save() # Save here so the temporary match is created.
+                    for json_player in json_player_data:
+                        bulk_create.append(MatchHistoryQueuePlayers.from_json_response(match_history, json_player))
+                        account_list.append(convertAccountNumbertoSteam64(json_player['account_id']))
+                    match_history.matchhistoryqueueplayers_set.bulk_create(bulk_create)
+                GetPlayerNames(account_list) # Loads accounts into cache
+            transaction.commit()
+        except:
+            transaction.rollback()
+            raise
+        cache.set('match_history_refresh', MatchHistoryQueue.objects.all().reverse()[:10], 300) # Timeout to refresh match history.
+    transaction.commit()
+    return return_history
 
 @transaction.commit_manually
 def GetMatchDetails(matchid):
@@ -45,8 +97,8 @@ def GetMatchDetails(matchid):
             for json_player in json_player_data:
                 bulk_create.append(MatchDetailsPlayerEntry.from_json_response(match_details, json_player))
                 account_list.append(convertAccountNumbertoSteam64(json_player['account_id']))
-        GetPlayerNames(account_list) # Make sure names are loaded into cache.
-        if match_details != None:
+        GetPlayerNames(account_list) # Loads accounts into db for FK constraints. TODO: Re-work me? Disable FK constraints entirely?
+        if match_details != None and len(bulk_create) > 0: 
             match_details.matchdetailsplayerentry_set.bulk_create(bulk_create)
         transaction.commit()
     except:
@@ -136,15 +188,23 @@ def GetPlayerNames(player_ids):
                 request_list.append(player_id)
             else:
                 return_dict.update({player_id: player})
-        if len(request_list) != 0:
-            response = urllib2.urlopen(STEAM_USER_NAMES + '?key=' + API_KEY + '&steamids=' + ','.join(str(req) for req in request_list)) # TODO: Clean me for clarity.
-            json_data = json.loads(response.read())['response']
-            bulk_create = []
-            for player in json_data['players']:
-                steamplayer = SteamPlayer.from_json_response(player)
-                bulk_create.append(steamplayer)
-            SteamPlayer.objects.bulk_create(bulk_create)
-            response.close()
+        if len(request_list) != 0: # Only allowed 100 users per request. Must split it up.
+            do_this = True
+            while do_this == True:
+                sliced_list = request_list[:100] # Get first 100 elements
+                if len(request_list) > 100:
+                    request_list = request_list[100:] # Get everything but first 100 elements.
+                else:
+                    do_this = False # No longer over 100. Don't need to do this again.
+                response = urllib2.urlopen(STEAM_USER_NAMES + '?key=' + API_KEY + '&steamids=' + ','.join(str(req) for req in sliced_list)) # TODO: Clean me for clarity.
+                json_data = json.loads(response.read())['response']
+                bulk_create = []
+                for player in json_data['players']:
+                    steamplayer = SteamPlayer.from_json_response(player)
+                    bulk_create.append(steamplayer)
+                    
+                SteamPlayer.objects.bulk_create(bulk_create)
+                response.close()
     except urllib2.HTTPError, e:
         if e.code == 400:
             return_dict.update({'error': 'Malformed request.'})

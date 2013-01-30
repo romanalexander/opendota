@@ -4,12 +4,15 @@ from datetime import datetime
 class SteamPlayer(models.Model):
     steamid = models.BigIntegerField(primary_key=True, unique=True)
     last_refresh = models.DateTimeField(auto_now=True, auto_now_add=True, db_index=True) # Last time this player was checked.
-    personaname = models.TextField(db_index=True)
+    personaname = models.TextField() # Don't index this. Will degrade the index quickly.
     profileurl = models.TextField(blank=True)
     avatar = models.TextField(blank=True)
     avatarmedium = models.TextField(blank=True)
     avatarfull = models.TextField(blank=True)
     lastlogoff = models.DateTimeField(blank=True) # UNIX time of player last seen.
+    
+    def __unicode__(self):
+        return self.personaname
     
     def get_steam_name(self):
         return self.personaname
@@ -17,12 +20,12 @@ class SteamPlayer(models.Model):
     @staticmethod
     def from_json_response(json):
         return SteamPlayer(steamid = json.get('steamid'),
-                           personaname = json.get('personaname'),
-                           profileurl = json.get('profileurl'),
-                           avatar = json.get('avatar'),
-                           avatarmedium = json.get('avatarmedium'),
-                           avatarfull = json.get('avatarfull'),
-                           lastlogoff = datetime.fromtimestamp(json.get('lastlogoff')))
+               personaname = json.get('personaname'),
+               profileurl = json.get('profileurl'),
+               avatar = json.get('avatar'),
+               avatarmedium = json.get('avatarmedium'),
+               avatarfull = json.get('avatarfull'),
+               lastlogoff = datetime.fromtimestamp(json.get('lastlogoff')))
       
 # To refresh, use django-admin.py getitems
 class Items(models.Model):
@@ -52,25 +55,35 @@ class MatchHistoryQueue(models.Model):
     match_id = models.BigIntegerField(primary_key=True, unique=True)
     last_refresh = models.DateTimeField(auto_now=True, auto_now_add=True) # Queue will empty FIFO
     start_time = models.DateTimeField() # UNIX Timestamp
-    lobby_type = models.DateTimeField()
+    lobby_type = models.IntegerField()
+    
+    @staticmethod
+    def from_json_response(json): 
+        return MatchHistoryQueue(
+            match_id=json['match_id'],
+            start_time=datetime.fromtimestamp(json['start_time']),
+            lobby_type=json['lobby_type'],)
+    
 class MatchHistoryQueuePlayers(models.Model):
     match_history_queue = models.ForeignKey('MatchHistoryQueue')
-    account_id = models.BigIntegerField()
+    account_id = models.ForeignKey(SteamPlayer, related_name='+', db_column='account_id', null=True)
     player_slot = models.IntegerField()
-    hero_id = models.ForeignKey('Heroes', related_name='+')
+    hero_id = models.ForeignKey('Heroes', related_name='+', db_column='hero_id')
+    
+    class Meta:
+        unique_together = (('match_history_queue', 'hero_id', 'player_slot',),) # Every match, only one hero_id per player slot.
+        ordering = ('player_slot',)
+    
+    @staticmethod
+    def from_json_response(match_history_queue, json):
+        print(steamapi.convertAccountNumbertoSteam64(json['account_id']))
+        return MatchHistoryQueuePlayers(
+            match_history_queue=match_history_queue,
+            account_id_id=steamapi.convertAccountNumbertoSteam64(json['account_id']), # Store all data in steam64. No reason to have Steam32.
+            player_slot=json['player_slot'],
+            hero_id_id=json['hero_id'],)
 
-def get_game_type(lobby_type): # TODO: Finish & Localize me.
-        if lobby_type == 0:
-            return 'All Pick'
-        elif lobby_type == 1:
-            return 'Single Draft'
-        elif lobby_type == 2:
-            return 'All Random'
-        elif lobby_type == 3:
-            return 'Random Draft'
-        else:
-            return str(lobby_type) 
-
+""" Courtesy Cyborgmatt
 "dota_game_mode_0"                                                "ALL PICK"
 "dota_game_mode_1"                                                "SINGLE DRAFT"
 "dota_game_mode_2"                                                "ALL RANDOM"
@@ -85,6 +98,18 @@ def get_game_type(lobby_type): # TODO: Finish & Localize me.
 "dota_game_mode_11"                                                "MID ONLY"
 "dota_game_mode_12"                                                "LEAST PLAYED"
 "dota_game_mode_13"                                                "NEW PLAYER POOL"
+"""
+def get_game_type(lobby_type): # TODO: Finish & Localize me.
+        if lobby_type == 0:
+            return 'All Pick'
+        elif lobby_type == 1:
+            return 'Single Draft'
+        elif lobby_type == 2:
+            return 'All Random'
+        elif lobby_type == 3:
+            return 'Random Draft'
+        else:
+            return str(lobby_type) 
 
 class MatchDetails(models.Model):
     match_id = models.BigIntegerField(primary_key=True, unique=True)
