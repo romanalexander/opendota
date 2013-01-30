@@ -51,6 +51,7 @@ def GetMatchDetails(matchid):
         transaction.commit()
     except:
         transaction.rollback()
+        raise
     return match_details
 
 def GetMatchHistoryJson(**kargs):
@@ -69,7 +70,8 @@ def GetMatchHistoryJson(**kargs):
         elif e.code == 503:
             json_data.update({'error': 'Steam servers overloaded.'})
         else:
-            json_data.update({'error': 'Unknown HTTP error' + e.code})
+            json_data.update({'error': 'Unknown HTTP error' + str(e.code)})
+        raise
             
     return json_data
 
@@ -89,7 +91,8 @@ def GetMatchDetailsJson(match_id):
         elif e.code == 503:
             json_data.update({'error': 'Steam servers overloaded.'})
         else:
-            json_data.update({'error': 'Unknown HTTP error' + e.code})
+            json_data.update({'error': 'Unknown HTTP error' + str(e.code)})
+        raise
     
     return json_data
 
@@ -150,7 +153,8 @@ def GetPlayerNames(player_ids):
         elif e.code == 503:
             return_dict.update({'error': 'Steam servers overloaded.'})
         else:
-            return_dict.update({'error': 'Unknown HTTP error' + e.code})
+            return_dict.update({'error': 'Unknown HTTP error' + str(e.code)})
+        raise
             
     return return_dict
 
