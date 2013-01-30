@@ -53,7 +53,8 @@ matches_requested=<n> # Defaults is 25 matches, this can limit to less
 
 @transaction.commit_manually
 def GetMatchHistory(**kargs):
-    return_history = cache.get('match_history_refresh', None) 
+    return_history = cache.get('match_history_refresh', None)
+    create_queue = [] 
     if return_history == None:
         try:
             json_data = GetMatchHistoryJson(**kargs)
@@ -71,13 +72,17 @@ def GetMatchHistory(**kargs):
                     for json_player in json_player_data:
                         bulk_create.append(MatchHistoryQueuePlayers.from_json_response(match_history, json_player))
                         account_list.append(convertAccountNumbertoSteam64(json_player.get('account_id', None)))
-                    match_history.matchhistoryqueueplayers_set.bulk_create(bulk_create)
+                    create_queue.append((match_history, bulk_create))
                 GetPlayerNames(account_list) # Loads accounts into cache
+                for match_history, bulk_create in create_queue:
+                    match_history.matchhistoryqueueplayers_set.bulk_create(bulk_create)
             transaction.commit()
         except:
             transaction.rollback()
             raise
-        cache.set('match_history_refresh', MatchHistoryQueue.objects.all().reverse()[:10], 300) # Timeout to refresh match history.
+        return_history = MatchHistoryQueue.objects.all().reverse()[:10] 
+        cache.set('match_history_refresh', return_history, 300) # Timeout to refresh match history.
+        
     transaction.commit()
     return return_history
 
