@@ -7,8 +7,8 @@ def home(request):
 
 @cache_page(60 * 15) # 15min
 def matches_overview(request):
-    result_dict = steamapi.GetMatchHistory()
-    return render(request, 'match_history.html', result_dict)
+    match_history = steamapi.GetMatchHistory()
+    return render(request, 'match_history.html', {'match_history': match_history})
 
 @cache_page(60 * 60) # 60min
 def matches_id(request, match_id):
