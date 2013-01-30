@@ -55,14 +55,14 @@ matches_requested=<n> # Defaults is 25 matches, this can limit to less
 def GetMatchHistory(**kargs):
     return_history = cache.get('match_history_refresh', None)
     create_queue = [] 
-    if return_history == None:
-        try:
+    try:
+        if return_history == None:
             json_data = GetMatchHistoryJson(**kargs)
             with connection.constraint_checks_disabled():
                 for match in json_data['matches']:
                     if(len(match['players']) < 1): # Don't log matches without players.
                         continue
-                    bulk_create = []
+                    bulk_json = []
                     account_list = []
                     json_player_data = match['players']
                     if MatchDetails.objects.filter(pk=match['match_id']).exists() or MatchHistoryQueue.objects.filter(pk=match['match_id']).exists():
@@ -70,18 +70,21 @@ def GetMatchHistory(**kargs):
                     match_history = MatchHistoryQueue.from_json_response(match)
                     match_history.save() # Save here so the temporary match is created.
                     for json_player in json_player_data:
-                        bulk_create.append(MatchHistoryQueuePlayers.from_json_response(match_history, json_player))
+                        bulk_json.append(json_player)
                         account_list.append(convertAccountNumbertoSteam64(json_player.get('account_id', None)))
-                    create_queue.append((match_history, bulk_create))
+                    create_queue.append((match_history, bulk_json))
                 GetPlayerNames(account_list) # Loads accounts into cache
-                for create_match_history, bulk_create_players in create_queue:
-                    create_match_history.matchhistoryqueueplayers_set.bulk_create(bulk_create_players)
-            transaction.commit()
-        except:
-            transaction.rollback()
-            raise
-        return_history = MatchHistoryQueue.objects.all().reverse()[:10] 
-        cache.set('match_history_refresh', return_history, 300) # Timeout to refresh match history.
+                for create_match_history, json_player_list in create_queue:
+                    queue_player_set = []
+                    for json_player in json_player_list:
+                        queue_player_set.append(MatchHistoryQueuePlayers.from_json_response(create_match_history, json_player))
+                    create_match_history.matchhistoryqueueplayers_set.bulk_create(queue_player_set)
+            return_history = MatchHistoryQueue.objects.all().reverse()[:10] 
+            cache.set('match_history_refresh', return_history, 300) # Timeout to refresh match history.
+        transaction.commit()
+    except:
+        transaction.rollback()
+        raise
     return return_history
 
 @transaction.commit_manually
@@ -183,7 +186,7 @@ def GetPlayerNames(player_ids):
         if type(player_ids) is not list: # Always make sure player_ids is a list.
             player_ids = [player_ids,]
         for player_id in player_ids:
-            if player_id == 4294967295: # Invalid playerid, assume private
+            if player_id == 4294967295 or player_id == None: # Invalid playerid, assume private
                 continue
             try:
                 player = SteamPlayer.objects.get(pk=player_id)
