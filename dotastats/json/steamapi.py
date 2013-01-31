@@ -79,7 +79,7 @@ def GetMatchHistory(**kargs):
                     for json_player in json_player_list:
                         queue_player_set.append(MatchHistoryQueuePlayers.from_json_response(create_match_history, json_player))
                     create_match_history.matchhistoryqueueplayers_set.bulk_create(queue_player_set)
-            return_history = MatchHistoryQueue.objects.all().reverse()[:10] 
+            return_history = MatchHistoryQueue.objects.all().order_by('-start_time')
             cache.set('match_history_refresh', return_history, 300) # Timeout to refresh match history.
         transaction.commit()
     except:

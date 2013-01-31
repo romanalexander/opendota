@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load staticfiles %}
+{% load humanize %}
 
 {% block headerscripts %}
 <style>
@@ -28,12 +29,14 @@
     {% include 'includes/searchbar_snippet.html' %}
     {% if match %}
         <h1>{{ match.get_game_type }}</h1><hr>
+        <div class="pull-right">{{ match.starttime|naturaltime }}</div>
         {% for team in teams %}
             {% if forloop.counter == 1%}
                 <h3>Radiant - {% if match.radiant_win %}Victory{% else %}Defeat{% endif %}</h3>
             {% else %}
                 <h3>Dire - {% if match.radiant_win %}Defeat{% else %}Victory{% endif %}</h3>
             {% endif %}
+            
             <table class="table table-bordered">
                 <thead>
                     <th class="dota_avatar">Hero</th>
