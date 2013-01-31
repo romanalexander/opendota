@@ -37,7 +37,10 @@ class Items(models.Model):
         return self.client_name
     
     def get_code_name(self):
-        return self.client_name[5:] # Ex: item_blink
+        if 'recipe' in self.client_name:
+            return 'recipe'
+        else:
+            return self.client_name[5:] # Ex: item_blink
     
 # To refresh, use django-admin.py getheroes
 class Heroes(models.Model):
