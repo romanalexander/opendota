@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load staticfiles %}
 
-{% block scripts %}
+{% block headerscripts %}
 <style>
 .dota_item {
     width: 62px; height: 32px;
@@ -46,7 +46,7 @@
                 <tbody>
                     {% for playerentry in team.all %}
                     <tr>
-                        <td><img src="{% static 'img/miniheroes/'|add:playerentry.hero_id.get_code_name|add:'.png' %}" alt="{{ playerentry.hero_id }}"></td><!-- TODO MAKE ICON -->
+                        <td><img src="{% static 'img/miniheroes/'|add:playerentry.hero_id.get_code_name|add:'.png' %}" alt="{{ playerentry.hero_id }}"></td>
                         <td>{{ playerentry.level }}</td>
                         <td>
                             {% if playerentry.leaver_status == 3 %}
@@ -54,10 +54,10 @@
                             {% endif %}
                             {% if playerentry.is_bot %}
                             <em>Bot</em>
-                            {% elif playerentry.account_id_d != 4294967295 and playerentry.account_id != None %}
-                            <img src="{{ playerentry.avatar }}"><a href="{{ playerentry.account_id.profileurl }}">{{ playerentry.get_steam_name }}</a>
+                            {% elif playerentry.account_id_id != 4294967295 and playerentry.account_id != None %}
+                            <img src="{{ playerentry.account_id.avatar }}"> <a href="{{ playerentry.account_id.profileurl }}">{{ playerentry.get_steam_name }}</a>
                             {% else %}
-                            <em>{{ playerentry.get_steam_name}}</em>
+                            <em>{{ playerentry.get_steam_name }}</em>
                             {% endif %}
                         </td>
                         <td>{{ playerentry.kills }} / {{ playerentry.deaths }} / {{ playerentry.assists }}</td>
