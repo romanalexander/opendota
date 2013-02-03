@@ -123,6 +123,7 @@ INSTALLED_APPS = (
     'dotastats',
     'dajaxice',
     'dajax',
+    'south',
 )
 
 # A sample logging configuration. The only tangible logging
