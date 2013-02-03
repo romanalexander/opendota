@@ -3,7 +3,7 @@ import urllib
 import urllib2
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
-from dotastats.models import MatchDetails, MatchDetailsPlayerEntry, SteamPlayer, MatchHistoryQueue, MatchHistoryQueuePlayers
+from dotastats.models import MatchDetails, MatchDetailsPlayerEntry, SteamPlayer, MatchHistoryQueue, MatchHistoryQueuePlayers, MatchPicksBans
 from django.db import transaction
 from django.core.cache import cache
 from django.db import connection
@@ -99,7 +99,13 @@ def GetMatchDetails(matchid):
             json_data = GetMatchDetailsJson(matchid)
             json_player_data = json_data['players']
             match_details = MatchDetails.from_json_response(json_data)
-            match_details.save()        
+            match_details.save()
+            json_picks_bans_data = json_data.get('picks_bans', False)
+            if json_picks_bans_data:
+                picks_bans_bulk_create = []
+                for json_picks_bans in json_picks_bans_data:
+                    picks_bans_bulk_create.append(MatchPicksBans.from_json_response(match_details, json_picks_bans))
+                MatchPicksBans.objects.bulk_create(picks_bans_bulk_create)
             for json_player in json_player_data:
                 bulk_create.append(MatchDetailsPlayerEntry.from_json_response(match_details, json_player))
                 account_list.append(convertAccountNumbertoSteam64(json_player['account_id']))

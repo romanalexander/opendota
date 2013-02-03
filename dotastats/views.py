@@ -13,9 +13,7 @@ def matches_overview(request):
 @cache_page(60 * 60) # 60min
 def matches_id(request, match_id):
     result_match = steamapi.GetMatchDetails(match_id)
-    radiant_players = result_match.matchdetailsplayerentry_set.filter(player_slot__lt=100)
-    dire_players = result_match.matchdetailsplayerentry_set.filter(player_slot__gte=100)
-    return render(request, 'match_id.html', {'match': result_match, 'teams': (radiant_players, dire_players)})
+    return render(request, 'match_id.html', {'match': result_match, 'teams': (result_match.get_radiant_players(), result_match.get_dire_players())})
 
 @cache_page(60 * 60) # 60min
 def about(request):

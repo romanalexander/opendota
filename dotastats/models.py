@@ -10,7 +10,7 @@ class SteamPlayer(models.Model):
     avatar = models.TextField(blank=True)
     avatarmedium = models.TextField(blank=True)
     avatarfull = models.TextField(blank=True)
-    lastlogoff = models.DateTimeField(blank=True) # UNIX time of player last seen.
+    lastlogoff = models.DateTimeField(null=True) # UNIX time of player last seen.
     
     def __unicode__(self):
         return self.personaname
@@ -26,7 +26,7 @@ class SteamPlayer(models.Model):
                avatar = json.get('avatar'),
                avatarmedium = json.get('avatarmedium'),
                avatarfull = json.get('avatarfull'),
-               lastlogoff = datetime.fromtimestamp(json.get('lastlogoff')))
+               lastlogoff = None if json.get('lastlogoff', None) == None else datetime.fromtimestamp(json.get('lastlogoff')))
       
 # To refresh, use django-admin.py getitems
 class Items(models.Model):
@@ -58,6 +58,7 @@ class Heroes(models.Model):
 class MatchHistoryQueue(models.Model):
     match_id = models.BigIntegerField(primary_key=True, unique=True)
     last_refresh = models.DateTimeField(auto_now=True, auto_now_add=True) # Queue will empty FIFO
+    match_seq_num = models.BigIntegerField()
     start_time = models.DateTimeField() # UNIX Timestamp
     lobby_type = models.IntegerField()
     
@@ -68,6 +69,7 @@ class MatchHistoryQueue(models.Model):
     def from_json_response(json): 
         return MatchHistoryQueue(
             match_id=json['match_id'],
+            match_seq_num=json['match_seq_num'],
             start_time=datetime.fromtimestamp(json['start_time']),
             lobby_type=json['lobby_type'],)
     
@@ -152,10 +154,11 @@ def get_lobby_type(lobby_type):
 class MatchDetails(models.Model):
     match_id = models.BigIntegerField(primary_key=True, unique=True)
     last_refresh = models.DateTimeField(auto_now=True, auto_now_add=True) # Last time this data was accessed for freshness.
+    match_seq_num = models.BigIntegerField()
     season = models.IntegerField()
     radiant_win = models.BooleanField()
     duration = models.IntegerField() # Seconds of match
-    starttime = models.DateTimeField() # UNIX Timestamp
+    start_time = models.DateTimeField() # UNIX Timestamp
     tower_status_radiant = models.IntegerField()
     tower_status_dire = models.IntegerField()
     barracks_status_radiant = models.IntegerField()
@@ -172,6 +175,15 @@ class MatchDetails(models.Model):
     def get_game_type(self):
         return get_game_type(self.game_mode)
     
+    def get_players(self):
+        return self.matchdetailsplayerentry_set.all()
+    
+    def get_dire_players(self):
+        return self.matchdetailsplayerentry_set.filter(player_slot__gte=100)
+    
+    def get_radiant_players(self):
+        return self.matchdetailsplayerentry_set.filter(player_slot__lt=100)
+    
     def __unicode__(self):
         return 'MatchID: ' + self.match_id
     
@@ -182,10 +194,11 @@ class MatchDetails(models.Model):
     def from_json_response(json):
         return MatchDetails(
             match_id = json['match_id'],
+            match_seq_num=json['match_seq_num'],
             season = json['season'],
             radiant_win = json['radiant_win'],
             duration = json['duration'],
-            starttime = datetime.fromtimestamp(json['starttime']),
+            start_time = datetime.fromtimestamp(json['start_time']),
             tower_status_radiant = json['tower_status_radiant'],
             tower_status_dire = json['tower_status_dire'],
             barracks_status_radiant = json['barracks_status_radiant'],
@@ -197,11 +210,30 @@ class MatchDetails(models.Model):
             leagueid = json['leagueid'],
             positive_votes = json['positive_votes'],
             negative_votes = json['negative_votes'],
-            game_mode = json['game_mode'])
+            game_mode = json['game_mode']) 
     
     class Meta:
         ordering = ('match_id',)
+
+class MatchPicksBans(models.Model): # TODO: BANPICKS. 115359820
+    match_details = models.ForeignKey('MatchDetails')
+    is_pick = models.BooleanField()
+    hero_id = models.ForeignKey('Heroes', related_name='+', db_column='hero_id')
+    team = models.IntegerField()
+    order = models.IntegerField()
     
+    @staticmethod
+    def from_json_response(match_details, json):
+        return MatchPicksBans(
+              match_details = match_details,
+              is_pick=json['is_pick'],
+              hero_id_id=json['hero_id'],
+              team=json['team'],
+              order=json['order'],)    
+    class Meta:
+        unique_together = (('match_details', 'hero_id', 'order',),) # One hero per order per match.
+        ordering = ('order',)
+        
 class MatchDetailsPlayerEntry(models.Model):
     match_details = models.ForeignKey('MatchDetails')
     account_id = models.ForeignKey(SteamPlayer, related_name='+', db_column='account_id', null=True)
@@ -227,6 +259,7 @@ class MatchDetailsPlayerEntry(models.Model):
     tower_damage = models.IntegerField()
     hero_healing = models.IntegerField()
     level = models.IntegerField()
+    ability_upgrades = models.TextField(null=True) # NOTE: Ability upgrades are stored in raw JSON format because they don't need indexing or aggregation.
     # Custom tracking fields
     is_bot = models.BooleanField(default=False)
     
@@ -260,6 +293,7 @@ class MatchDetailsPlayerEntry(models.Model):
                 tower_damage=json['tower_damage'],
                 hero_healing=json['hero_healing'],
                 level=json['level'],
+                ability_upgrades=json.get('ability_upgrades', None), # ability_upgrades can be null. 
                 is_bot=True if json.get('account_id', None) == None else False,)
         
     class Meta:
