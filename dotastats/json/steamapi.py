@@ -55,6 +55,7 @@ matches_requested=<n> # Defaults is 25 matches, this can limit to less
 def GetMatchHistory(**kargs):
     return_history = cache.get('match_history_refresh', None)
     create_queue = [] 
+    account_list = []
     try:
         if return_history == None:
             json_data = GetMatchHistoryJson(**kargs)
@@ -63,7 +64,6 @@ def GetMatchHistory(**kargs):
                     if(len(match['players']) < 1): # Don't log matches without players.
                         continue
                     bulk_json = []
-                    account_list = []
                     json_player_data = match['players']
                     if MatchDetails.objects.filter(pk=match['match_id']).exists() or MatchHistoryQueue.objects.filter(pk=match['match_id']).exists():
                         continue # Object in queue or already created. Can ignore for now.
