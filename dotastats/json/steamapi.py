@@ -3,10 +3,10 @@ import urllib
 import urllib2
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
-from dotastats.models import MatchDetails, MatchDetailsPlayerEntry, SteamPlayer, MatchHistoryQueue, MatchHistoryQueuePlayers, MatchPicksBans
-from django.db import transaction
+from django.db import transaction, connection
 from django.core.cache import cache
-from django.db import connection
+from dotastats.models import MatchDetails, MatchDetailsPlayerEntry, SteamPlayer, MatchHistoryQueue, MatchHistoryQueuePlayers, MatchPicksBans
+from dotastats.exceptions import SteamAPIError
 
 # API Key macro from settings file.
 API_KEY = settings.STEAM_API_KEY
@@ -59,6 +59,8 @@ def GetMatchHistory(**kargs):
     try:
         if return_history == None:
             json_data = GetMatchHistoryJson(**kargs)
+            if json_data['status'] == 15: # Match history denied, is set to private.
+                raise SteamAPIError("This user has his DotA2 Profile set to private.")
             with connection.constraint_checks_disabled():
                 for match in json_data['matches']:
                     if(len(match['players']) < 1): # Don't log matches without players.
@@ -101,8 +103,8 @@ def GetMatchDetails(matchid):
             except urllib2.HTTPError, e:
                 if e.code == 401: # Unauthorized to view lobby. Return None
                     MatchHistoryQueue.objects.filter(match_id=matchid).all().delete() # Remove from queue.
-                    transaction.commit()
-                    return None
+                    transaction.commit() # Make sure the deletion goes through before raising error.
+                    raise SteamAPIError("This lobby is password protected.")
                 else:
                     raise
             json_player_data = json_data['players']
@@ -137,15 +139,14 @@ def GetMatchHistoryJson(**kargs):
         response.close()
     except urllib2.HTTPError, e:
         if e.code == 400:
-            json_data.update({'error': 'Malformed request.'})
+            raise SteamAPIError("Malformed API request.")
         elif e.code == 401:
-            json_data.update({'error': 'Unauthorized API access.'})
+            raise SteamAPIError("Unauthorized API access. Please recheck your API key.")
         elif e.code == 503:
-            json_data.update({'error': 'Steam servers overloaded.'})
+            raise SteamAPIError("The Steam servers are currently overloaded.")
         else:
-            json_data.update({'error': 'Unknown HTTP error' + str(e.code)})
+            raise SteamAPIError("Unknown API error" + str(e.code))
         raise
-            
     return json_data
 
 def GetMatchDetailsJson(match_id):
@@ -158,15 +159,14 @@ def GetMatchDetailsJson(match_id):
         response.close()
     except urllib2.HTTPError, e:
         if e.code == 400:
-            json_data.update({'error': 'Malformed request.'})
+            raise SteamAPIError("Malformed API request.")
         elif e.code == 401:
-            json_data.update({'error': 'Unauthorized API access.'})
+            raise SteamAPIError("Unauthorized API access. Please recheck your API key.")
         elif e.code == 503:
-            json_data.update({'error': 'Steam servers overloaded.'})
+            raise SteamAPIError("The Steam servers are currently overloaded.")
         else:
-            json_data.update({'error': 'Unknown HTTP error' + str(e.code)})
+            raise SteamAPIError("Unknown API error" + str(e.code))
         raise
-    
     return json_data
 
 # Converts the 'account number' to Steam64. Does not convert PRIVATE players.
@@ -228,14 +228,13 @@ def GetPlayerNames(player_ids):
                 response.close()
     except urllib2.HTTPError, e:
         if e.code == 400:
-            return_dict.update({'error': 'Malformed request.'})
+            raise SteamAPIError("Malformed API request.")
         elif e.code == 401:
-            return_dict.update({'error': 'Unauthorized API access.'})
+            raise SteamAPIError("Unauthorized API access. Please recheck your API key.")
         elif e.code == 503:
-            return_dict.update({'error': 'Steam servers overloaded.'})
+            raise SteamAPIError("The Steam servers are currently overloaded.")
         else:
-            return_dict.update({'error': 'Unknown HTTP error' + str(e.code)})
+            raise SteamAPIError("Unknown API error" + str(e.code))
         raise
-            
     return return_dict
 
