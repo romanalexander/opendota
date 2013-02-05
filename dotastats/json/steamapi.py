@@ -52,8 +52,8 @@ matches_requested=<n> # Defaults is 25 matches, this can limit to less
 """
 
 def GetLatestMatches():
-    """ Returns the last 500 matches (sorted by match_id) that were parsed into MatchDetails. """
-    return MatchDetails.objects.all()[:500]
+    """ Returns the last 500 matches (sorted by match_seq_num) that were parsed into MatchDetails. """
+    return MatchDetails.objects.all().order_by('-match_seq_num')[:500]
 
 @transaction.commit_manually
 def GetMatchHistory(**kargs):
