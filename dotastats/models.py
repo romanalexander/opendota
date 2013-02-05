@@ -1,6 +1,7 @@
 from django.db import models
 from datetime import datetime
 from django.core import serializers
+from django.utils.timezone import utc
 
 class SteamPlayer(models.Model):
     steamid = models.BigIntegerField(primary_key=True, unique=True)
@@ -26,7 +27,7 @@ class SteamPlayer(models.Model):
                avatar = json.get('avatar'),
                avatarmedium = json.get('avatarmedium'),
                avatarfull = json.get('avatarfull'),
-               lastlogoff = None if json.get('lastlogoff', None) == None else datetime.fromtimestamp(json.get('lastlogoff')))
+               lastlogoff = None if json.get('lastlogoff', None) == None else datetime.fromtimestamp(json.get('lastlogoff')).replace(tzinfo=utc))
       
 # To refresh, use django-admin.py getitems
 class Items(models.Model):
@@ -70,7 +71,7 @@ class MatchHistoryQueue(models.Model):
         return MatchHistoryQueue(
             match_id=json['match_id'],
             match_seq_num=json['match_seq_num'],
-            start_time=datetime.fromtimestamp(json['start_time']),
+            start_time=datetime.fromtimestamp(json['start_time']).replace(tzinfo=utc),
             lobby_type=json['lobby_type'],)
     class Meta:
         get_latest_by = "last_refresh"
@@ -200,7 +201,7 @@ class MatchDetails(models.Model):
             season = json['season'],
             radiant_win = json['radiant_win'],
             duration = json['duration'],
-            start_time = datetime.fromtimestamp(json['start_time']),
+            start_time = datetime.fromtimestamp(json['start_time']).replace(tzinfo=utc),
             tower_status_radiant = json['tower_status_radiant'],
             tower_status_dire = json['tower_status_dire'],
             barracks_status_radiant = json['barracks_status_radiant'],
@@ -262,6 +263,7 @@ class MatchDetailsPlayerEntry(models.Model):
     hero_healing = models.IntegerField()
     level = models.IntegerField()
     ability_upgrades = models.TextField(null=True) # NOTE: Ability upgrades are stored in raw JSON format because they don't need indexing or aggregation.
+    additional_units = models.TextField(null=True) # NOTE: Additional units (aka: Syllabear's spirit bear) are stored in raw JSON format because they don't need indexing or aggregation.
     # Custom tracking fields
     is_bot = models.BooleanField(default=False)
     
@@ -296,6 +298,7 @@ class MatchDetailsPlayerEntry(models.Model):
                 hero_healing=json['hero_healing'],
                 level=json['level'],
                 ability_upgrades=json.get('ability_upgrades', None), # ability_upgrades can be null. 
+                additional_units=json.get('additional_units', None),
                 is_bot=True if json.get('account_id', None) == None else False,)
         
     class Meta:
