@@ -72,6 +72,8 @@ class MatchHistoryQueue(models.Model):
             match_seq_num=json['match_seq_num'],
             start_time=datetime.fromtimestamp(json['start_time']),
             lobby_type=json['lobby_type'],)
+    class Meta:
+        get_latest_by = "last_refresh"
     
 class MatchHistoryQueuePlayers(models.Model):
     match_history_queue = models.ForeignKey('MatchHistoryQueue')
