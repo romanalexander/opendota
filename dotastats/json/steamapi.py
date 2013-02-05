@@ -65,7 +65,7 @@ def GetMatchHistory(**kargs):
                         continue
                     bulk_json = []
                     json_player_data = match['players']
-                    if MatchDetails.objects.filter(pk=match['match_id']).exists() or MatchHistoryQueue.objects.filter(pk=match['match_id']).exists():
+                    if MatchDetails.objects.filter(pk=match['match_id']).exists() or MatchHistoryQueue.objects.filter(pk=match['match_id']).exists() or match['lobby_type'] == 4:
                         continue # Object in queue or already created. Can ignore for now.
                     match_history = MatchHistoryQueue.from_json_response(match)
                     match_history.save() # Save here so the temporary match is created.
@@ -96,7 +96,15 @@ def GetMatchDetails(matchid):
         try:
             match_details = MatchDetails.objects.get(match_id=matchid)
         except ObjectDoesNotExist:
-            json_data = GetMatchDetailsJson(matchid)
+            try:
+                json_data = GetMatchDetailsJson(matchid)
+            except urllib2.HTTPError, e:
+                if e.code == 401: # Unauthorized to view lobby. Return None
+                    MatchHistoryQueue.objects.filter(match_id=matchid).all().delete() # Remove from queue.
+                    transaction.commit()
+                    return None
+                else:
+                    raise
             json_player_data = json_data['players']
             match_details = MatchDetails.from_json_response(json_data)
             match_details.save()
@@ -109,9 +117,9 @@ def GetMatchDetails(matchid):
             for json_player in json_player_data:
                 bulk_create.append(MatchDetailsPlayerEntry.from_json_response(match_details, json_player))
                 account_list.append(convertAccountNumbertoSteam64(json_player['account_id']))
-        GetPlayerNames(account_list) # Loads accounts into db for FK constraints. TODO: Re-work me? Disable FK constraints entirely?
-        if match_details != None and len(bulk_create) > 0: 
-            match_details.matchdetailsplayerentry_set.bulk_create(bulk_create)
+            GetPlayerNames(account_list) # Loads accounts into db for FK constraints. TODO: Re-work me? Disable FK constraints entirely?
+            if match_details != None and len(bulk_create) > 0: 
+                match_details.matchdetailsplayerentry_set.bulk_create(bulk_create)
         MatchHistoryQueue.objects.filter(match_id=matchid).all().delete()
         transaction.commit()
     except:
