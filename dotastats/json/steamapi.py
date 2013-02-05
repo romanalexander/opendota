@@ -112,6 +112,7 @@ def GetMatchDetails(matchid):
         GetPlayerNames(account_list) # Loads accounts into db for FK constraints. TODO: Re-work me? Disable FK constraints entirely?
         if match_details != None and len(bulk_create) > 0: 
             match_details.matchdetailsplayerentry_set.bulk_create(bulk_create)
+        MatchHistoryQueue.objects.filter(match_id=matchid).all().delete()
         transaction.commit()
     except:
         transaction.rollback()
