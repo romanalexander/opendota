@@ -6,3 +6,4 @@ venv
 *.pyc
 *.sqllite
 _build
+celery

@@ -1,5 +1,11 @@
+# Make this unique, and don't share it with anybody.
+SECRET_KEY = 'sw*xnj3*+f-1%0fp310ajg-9f2(8_5$1=(gu7&q)h#lkwj%-an'
+# Steam Web API Key (generate new before project deployments)
+STEAM_API_KEY = 'B5CD24440CC4C06B6C4402D29D533022'
+
 import os
 import sys
+from datetime import timedelta
 
 settings_dir = os.path.dirname(__file__)
 PROJECT_ROOT = os.path.abspath(os.path.dirname(settings_dir))
@@ -82,8 +88,7 @@ STATICFILES_FINDERS = (
 #    'django.contrib.staticfiles.finders.DefaultStorageFinder',
 )
 
-# Make this unique, and don't share it with anybody.
-SECRET_KEY = 'sw*xnj3*+f-1%0fp310ajg-9f2(8_5$1=(gu7&q)h#lkwj%-an'
+
 
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
@@ -177,8 +182,7 @@ CACHES = {
     },
 }
 
-# Steam Web API Key (generate new before project deployments)
-STEAM_API_KEY = "B5CD24440CC4C06B6C4402D29D533022"
+
 
 # Following settings are for django-openid-auth
 AUTHENTICATION_BACKENDS = (
@@ -200,9 +204,17 @@ import dj_database_url
 if not DEBUG: # In production, use heroku postgres. 
     DATABASES['default'] =  dj_database_url.config()
 
-BROKER_BACKEND = 'django'
-CELERY_ALWAYS_EAGER = True # TODO: REMOVE ME
-CELERY_DEFAULT_RATE_LIMIT = '1/s'
 import djcelery
 djcelery.setup_loader()
+
+BROKER_BACKEND = 'django'
+BROKER_URL = 'django://'
+CELERY_TIMEZONE = 'UTC'
+CELERYD_CONCURRENCY = 1
+CELERYBEAT_SCHEDULE = {
+    'poll_match_history_queue': {
+        'task': 'tasks.poll_match_history_queue',
+        'schedule': timedelta(seconds=2),
+    }
+}
 
