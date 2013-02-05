@@ -24,7 +24,7 @@ def poll_match_history_queue():
             cache.set(lock_id + 'time', True, 60)
         else:
             logger.debug("No work to be done. Sleeping.")
-        return
+        return False
     
     if acquire_lock():
         logger.debug("Attempting to retreive match_id: " + str(queue_object.pk))
@@ -37,5 +37,5 @@ def poll_match_history_queue():
         finally:
             logger.debug("Lock released.")
             release_lock()
-        return
-    return
+        return True
+    return False
