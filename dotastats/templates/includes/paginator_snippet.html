@@ -1,0 +1,24 @@
+{% if results.object_list and results.paginator.num_pages > 1 %}
+<div class="pagination pagination-centered">
+    <ul>
+        {% if results.has_previous %}
+            <li><a href="?page={{ results.previous_page_number }}">Newer</a></li>
+        {% else %}
+            <li class="disabled"><span>Newer</span></li>
+        {% endif %}
+        {% for x in results.paginator.page_range %}
+            {% if x == results.number %}
+                <li><span>{{ x }}</span></li>
+            {% else %}
+                <li><a href="?page={{ x }}">{{ x }}</a></li>
+            {% endif %}
+        {% endfor %}
+        
+        {% if results.has_next %}
+            <li><a href="?page={{ results.next_page_number }}">Older</a></li>
+        {% else %}
+            <li class="disabled"><span>Older</span></li>
+        {% endif %}
+    </ul>
+</div>
+{% endif %}

@@ -1,3 +1,4 @@
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.shortcuts import render, redirect
 from dotastats.json import steamapi
 from django.views.decorators.cache import cache_page
@@ -7,7 +8,17 @@ def home(request):
 
 @cache_page(60 * 15) # 15min
 def matches_overview(request):
-    match_history = steamapi.GetMatchHistory()
+    match_history_list = steamapi.GetLatestMatches()
+    paginator = Paginator(match_history_list, 25)
+    
+    page = request.GET.get('page')
+    try:
+        match_history = paginator.page(page)
+    except PageNotAnInteger:
+        match_history = paginator.page(1)
+    except EmptyPage:
+        match_history = paginator.page(paginator.num_pages)
+    
     return render(request, 'match_history.html', {'match_history': match_history})
 
 @cache_page(60 * 60) # 60min

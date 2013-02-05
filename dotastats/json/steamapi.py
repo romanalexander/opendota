@@ -51,6 +51,10 @@ matches_requested=<n> # Defaults is 25 matches, this can limit to less
         [leaver_status] => 0 - Player has stayed for the entire match.
 """
 
+def GetLatestMatches():
+    """ Returns the last 500 matches (sorted by match_id) that were parsed into MatchDetails. """
+    return MatchDetails.objects.all()[:500]
+
 @transaction.commit_manually
 def GetMatchHistory(**kargs):
     return_history = cache.get('match_history_refresh', None)

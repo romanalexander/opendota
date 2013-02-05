@@ -175,6 +175,9 @@ class MatchDetails(models.Model):
     negative_votes = models.IntegerField()
     game_mode = models.IntegerField()
     
+    def get_lobby_type(self):
+        return get_lobby_type(self.lobby_type)
+    
     def get_game_type(self):
         return get_game_type(self.game_mode)
     
@@ -216,7 +219,7 @@ class MatchDetails(models.Model):
             game_mode = json['game_mode']) 
     
     class Meta:
-        ordering = ('match_id',)
+        ordering = ('-match_id',)
 
 class MatchPicksBans(models.Model): # TODO: BANPICKS. 115359820
     match_details = models.ForeignKey('MatchDetails')
