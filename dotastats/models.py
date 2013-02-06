@@ -1,9 +1,9 @@
 from django.db import models
 from datetime import datetime
 from django.core import serializers
-from pytz import timezone
+from django.utils.timezone import get_current_timezone
 
-TIME_ZONE_SETTING = timezone('US/Eastern')
+TIME_ZONE_SETTING = get_current_timezone()
 
 class SteamPlayer(models.Model):
     steamid = models.BigIntegerField(primary_key=True, unique=True)
