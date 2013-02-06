@@ -1,5 +1,6 @@
-from django.db import models
 from datetime import datetime
+from django.db import models
+from django.db.models import Q
 from django.core import serializers
 from django.utils.timezone import get_current_timezone
 
@@ -176,6 +177,11 @@ class MatchDetails(models.Model):
     positive_votes = models.IntegerField()
     negative_votes = models.IntegerField()
     game_mode = models.IntegerField()
+    
+    @staticmethod
+    def exclude_low_priority():
+        """Returns only MatchDetails objects that are worth mentioning."""
+        return MatchDetails.objects.exclude(Q(lobby_type=4) | Q(human_players__lt=10))
     
     def get_lobby_type(self):
         return get_lobby_type(self.lobby_type)
