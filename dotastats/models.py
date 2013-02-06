@@ -1,7 +1,9 @@
 from django.db import models
 from datetime import datetime
 from django.core import serializers
-from django.utils.timezone import utc
+from pytz import timezone
+
+TIME_ZONE_SETTING = timezone('US/Eastern')
 
 class SteamPlayer(models.Model):
     steamid = models.BigIntegerField(primary_key=True, unique=True)
@@ -27,7 +29,7 @@ class SteamPlayer(models.Model):
                avatar = json.get('avatar'),
                avatarmedium = json.get('avatarmedium'),
                avatarfull = json.get('avatarfull'),
-               lastlogoff = None if json.get('lastlogoff', None) == None else datetime.fromtimestamp(json.get('lastlogoff')).replace(tzinfo=utc))
+               lastlogoff = None if json.get('lastlogoff', None) == None else datetime.fromtimestamp(json.get('lastlogoff')).replace(tzinfo=TIME_ZONE_SETTING))
       
 # To refresh, use django-admin.py getitems
 class Items(models.Model):
@@ -71,7 +73,7 @@ class MatchHistoryQueue(models.Model):
         return MatchHistoryQueue(
             match_id=json['match_id'],
             match_seq_num=json['match_seq_num'],
-            start_time=datetime.fromtimestamp(json['start_time']).replace(tzinfo=utc),
+            start_time=datetime.fromtimestamp(json['start_time']).replace(tzinfo=TIME_ZONE_SETTING),
             lobby_type=json['lobby_type'],)
     class Meta:
         get_latest_by = "last_refresh"
@@ -204,7 +206,7 @@ class MatchDetails(models.Model):
             season = json['season'],
             radiant_win = json['radiant_win'],
             duration = json['duration'],
-            start_time = datetime.fromtimestamp(json['start_time']).replace(tzinfo=utc),
+            start_time = datetime.fromtimestamp(json['start_time']).replace(tzinfo=TIME_ZONE_SETTING),
             tower_status_radiant = json['tower_status_radiant'],
             tower_status_dire = json['tower_status_dire'],
             barracks_status_radiant = json['barracks_status_radiant'],
