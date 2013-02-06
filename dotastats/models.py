@@ -180,8 +180,11 @@ class MatchDetails(models.Model):
     
     @staticmethod
     def exclude_low_priority():
-        """Returns only MatchDetails objects that are worth mentioning."""
-        return MatchDetails.objects.exclude(Q(lobby_type=4) | Q(human_players__lt=10))
+        """Returns only MatchDetails objects that are worth mentioning.
+        
+        Currently excludes all matches marked Private, all matches without 10 players, and all matches less than 4 minutes long. 
+        """
+        return MatchDetails.objects.exclude(Q(lobby_type=4) | Q(human_players__lt=10) | Q(duration__lt=240))
     
     def get_lobby_type(self):
         return get_lobby_type(self.lobby_type)
