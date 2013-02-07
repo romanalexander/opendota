@@ -5,7 +5,7 @@
     {% include 'includes/searchbar_snippet.html' %}
     
     {% for match in match_history %}
-        {{ match.get_lobby_type }}: <a href="{% url matches_id match_id=match.match_id %}">{{ match.match_id }}</a> began about {{ match.start_time|naturaltime }}
+        {{ match.get_lobby_type }}: <a href="{% url matches_id match_id=match.match_id %}">{{ match.match_id }}</a> began about {{ match.start_time|naturaltime }}. Last checked about {{ match.last_refresh|naturaltime }}.
         <br>
     {% endfor %}
     {% include 'includes/paginator_snippet.html' with results=match_history %}
