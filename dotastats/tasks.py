@@ -1,11 +1,11 @@
 import traceback
-from djcelery import celery
+from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.cache import cache
+from djcelery import celery
 from dotastats.models import MatchHistoryQueue, MatchDetails
 from dotastats.json.steamapi import GetMatchDetails, GetMatchHistory
 from celery.utils.log import get_task_logger
-from django.core.exceptions import ObjectDoesNotExist
-from django.conf import settings
 
 MATCH_FRESHNESS = settings.DOTA_MATCH_REFRESH
 
@@ -15,7 +15,16 @@ logger = get_task_logger(__name__)
 
 @celery.task(name='tasks.poll_match_history_queue')
 def poll_match_history_queue():
+    """Celery task that handles the constant background loading of matches.
+    
+    This task will first empty the MatchHistoryQueue, or look for more matches if nothing in queue.
+    
+    If there is no work at all, it will refresh old MatchDetails according to staleness.
+    
+    Returns True if work was handled; False if there was an error; None if no work to be done.
+    """
     lock_id = "poll_match_history_queue_lock"
+    success_value = True
     acquire_lock = lambda: cache.add(lock_id, "true", LOCK_EXPIRE)
     release_lock = lambda: cache.delete(lock_id)
     
@@ -45,11 +54,12 @@ def poll_match_history_queue():
                 logger.debug("Retreived and set match_id: " + str(queue_object.pk))
             else:
                 logger.debug("No work to be done. Sleeping.")
+                success_value = None
         except Exception, e:
+            success_value = False
             logger.error(traceback.format_exc())
             logger.error("Error creating object: " + str(queue_object.pk))
         finally:
             logger.debug("Lock released.")
             release_lock()
-            return True
-    return False
+    return success_value
