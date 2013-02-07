@@ -1,11 +1,12 @@
+from datetime import timedelta
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = 'sw*xnj3*+f-1%0fp310ajg-9f2(8_5$1=(gu7&q)h#lkwj%-an'
 # Steam Web API Key (generate new before project deployments)
 STEAM_API_KEY = 'B5CD24440CC4C06B6C4402D29D533022'
+DOTA_MATCH_REFRESH = timedelta(days=3) # Every 3 days, collect new data for matches from DotA2
 
 import os
 import sys
-from datetime import timedelta
 
 settings_dir = os.path.dirname(__file__)
 PROJECT_ROOT = os.path.abspath(os.path.dirname(settings_dir))
@@ -36,7 +37,7 @@ DATABASES = {
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
 # although not all choices may be available on all operating systems.
 # In a Windows environment this must be set to your system time zone.
-TIME_ZONE = 'America/Chicago'
+TIME_ZONE = 'America/New_York'
 
 # Language code for this installation. All choices can be found here:
 # http://www.i18nguy.com/unicode/language-identifiers.html

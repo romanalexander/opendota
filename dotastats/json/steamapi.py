@@ -1,15 +1,18 @@
 import simplejson as json
 import urllib
 import urllib2
+from datetime import datetime
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction, connection
 from django.core.cache import cache
+from django.utils import timezone
 from dotastats.models import MatchDetails, MatchDetailsPlayerEntry, SteamPlayer, MatchHistoryQueue, MatchHistoryQueuePlayers, MatchPicksBans
 from dotastats.exceptions import SteamAPIError
 
 # API Key macro from settings file.
 API_KEY = settings.STEAM_API_KEY
+MATCH_FRESHNESS = settings.DOTA_MATCH_REFRESH
 MATCH_HISTORY_URL = 'https://api.steampowered.com/IDOTA2Match_570/GetMatchHistory/V001/'
 MATCH_DETAILS_URL = 'https://api.steampowered.com/IDOTA2Match_570/GetMatchDetails/V001/'
 STEAM_USER_NAMES = 'http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/'
@@ -94,43 +97,52 @@ def GetMatchHistory(**kargs):
     return return_history
 
 @transaction.commit_manually
-def GetMatchDetails(matchid):
+def CreateMatchDetails(matchid):
     bulk_create = []
     account_list = []
     match_details = None
+    MatchDetails.objects.filter(match_id=matchid).all().delete() # Delete all previous MatchDetails.
     try:
         try:
-            match_details = MatchDetails.objects.get(match_id=matchid)
-        except ObjectDoesNotExist:
-            try:
-                json_data = GetMatchDetailsJson(matchid)
-            except urllib2.HTTPError, e:
-                if e.code == 401: # Unauthorized to view lobby. Return None
-                    MatchHistoryQueue.objects.filter(match_id=matchid).all().delete() # Remove from queue.
-                    transaction.commit() # Make sure the deletion goes through before raising error.
-                    raise SteamAPIError("This lobby is password protected.")
-                else:
-                    raise
-            json_player_data = json_data['players']
-            match_details = MatchDetails.from_json_response(json_data)
-            match_details.save()
-            json_picks_bans_data = json_data.get('picks_bans', False)
-            if json_picks_bans_data:
-                picks_bans_bulk_create = []
-                for json_picks_bans in json_picks_bans_data:
-                    picks_bans_bulk_create.append(MatchPicksBans.from_json_response(match_details, json_picks_bans))
-                MatchPicksBans.objects.bulk_create(picks_bans_bulk_create)
-            for json_player in json_player_data:
-                bulk_create.append(MatchDetailsPlayerEntry.from_json_response(match_details, json_player))
-                account_list.append(convertAccountNumbertoSteam64(json_player['account_id']))
-            GetPlayerNames(account_list) # Loads accounts into db for FK constraints. TODO: Re-work me? Disable FK constraints entirely?
-            if match_details != None and len(bulk_create) > 0: 
-                match_details.matchdetailsplayerentry_set.bulk_create(bulk_create)
+            json_data = GetMatchDetailsJson(matchid)
+        except urllib2.HTTPError, e:
+            if e.code == 401: # Unauthorized to view lobby. Return None
+                MatchHistoryQueue.objects.filter(match_id=matchid).all().delete() # Remove from queue.
+                transaction.commit() # Make sure the deletion goes through before raising error.
+                raise SteamAPIError("This lobby is password protected.")
+            else:
+                raise
+        json_player_data = json_data['players']
+        match_details = MatchDetails.from_json_response(json_data)
+        match_details.save()
+        json_picks_bans_data = json_data.get('picks_bans', False)
+        if json_picks_bans_data:
+            picks_bans_bulk_create = []
+            for json_picks_bans in json_picks_bans_data:
+                picks_bans_bulk_create.append(MatchPicksBans.from_json_response(match_details, json_picks_bans))
+            MatchPicksBans.objects.bulk_create(picks_bans_bulk_create)
+        for json_player in json_player_data:
+            bulk_create.append(MatchDetailsPlayerEntry.from_json_response(match_details, json_player))
+            account_list.append(convertAccountNumbertoSteam64(json_player['account_id']))
+        GetPlayerNames(account_list) # Loads accounts into db for FK constraints. TODO: Re-work me? Disable FK constraints entirely?
+        if match_details != None and len(bulk_create) > 0: 
+            match_details.matchdetailsplayerentry_set.bulk_create(bulk_create)
         MatchHistoryQueue.objects.filter(match_id=matchid).all().delete()
         transaction.commit()
     except:
         transaction.rollback()
         raise
+    return match_details
+
+
+def GetMatchDetails(matchid, force_refresh=False):
+    match_details = None
+    try:
+        match_details = MatchDetails.objects.get(match_id=matchid)
+    except ObjectDoesNotExist:
+        match_details = None
+    if match_details == None or force_refresh or timezone.now() - match_details.last_refresh > MATCH_FRESHNESS: 
+        CreateMatchDetails(matchid)
     return match_details
 
 def GetMatchHistoryJson(**kargs):

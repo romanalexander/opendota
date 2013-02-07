@@ -2,9 +2,12 @@ from datetime import datetime
 from django.db import models
 from django.db.models import Q
 from django.core import serializers
+from django.conf import settings
 from django.utils.timezone import get_current_timezone
+from django.utils import timezone
 
 TIME_ZONE_SETTING = get_current_timezone()
+MATCH_FRESHNESS = settings.DOTA_MATCH_REFRESH
 
 class SteamPlayer(models.Model):
     steamid = models.BigIntegerField(primary_key=True, unique=True)
@@ -99,23 +102,7 @@ class MatchHistoryQueuePlayers(models.Model):
             hero_id_id=json['hero_id'],
             is_bot=True if json.get('account_id', None) == None else False,)
 
-""" Courtesy Cyborgmatt
-"dota_game_mode_0"                                                "ALL PICK"
-"dota_game_mode_1"                                                "SINGLE DRAFT"
-"dota_game_mode_2"                                                "ALL RANDOM"
-"dota_game_mode_3"                                                "RANDOM DRAFT"
-"dota_game_mode_4"                                                "CAPTAINS DRAFT"
-"dota_game_mode_5"                                                "CAPTAINS MODE"
-"dota_game_mode_6"                                                "DEATH MODE"
-"dota_game_mode_7"                                                "DIRETIDE"
-"dota_game_mode_8"                                                "REVERSE CAPTAINS MODE"
-"dota_game_mode_9"                                                "The Greeviling"
-"dota_game_mode_10"                                                "TUTORIAL"
-"dota_game_mode_11"                                                "MID ONLY"
-"dota_game_mode_12"                                                "LEAST PLAYED"
-"dota_game_mode_13"                                                "NEW PLAYER POOL"
-"""
-def get_game_type(game_mode): # TODO: Finish & Localize me.
+def get_game_type(game_mode): # TODO: Finish me
     if game_mode == 0:
         return 'All Pick'
     elif game_mode == 1:
@@ -186,6 +173,19 @@ class MatchDetails(models.Model):
         """
         return MatchDetails.objects.exclude(Q(lobby_type=4) | Q(human_players__lt=10) | Q(duration__lt=240))
     
+    @staticmethod
+    def get_refresh():
+        """Returns a single MatchDetails that is ready to be accessed again for freshness, or None if nothing is to be refreshed. 
+        
+        Orders by last_refresh, oldest first.
+        
+        (Required since DotA2 Web API gives invalid account_id if account private.)
+        """
+        try:
+            return MatchDetails.objects.filter(last_refresh__lt=(timezone.now() - MATCH_FRESHNESS)).order_by('last_refresh')[0]
+        except IndexError:
+            return None
+    
     def get_lobby_type(self):
         return get_lobby_type(self.lobby_type)
     
@@ -200,9 +200,6 @@ class MatchDetails(models.Model):
     
     def get_radiant_players(self):
         return self.matchdetailsplayerentry_set.filter(player_slot__lt=100)
-    
-    def __unicode__(self):
-        return 'MatchID: ' + self.match_id
     
     def drop_json_debug(self):
         return serializers.serialize("json", [self], indent=4)
