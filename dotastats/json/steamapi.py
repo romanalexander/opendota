@@ -60,36 +60,33 @@ def GetLatestMatches():
 
 @transaction.commit_manually
 def GetMatchHistory(**kargs):
-    return_history = cache.get('match_history_refresh', None)
     create_queue = [] 
     account_list = []
     try:
-        if return_history == None:
-            json_data = GetMatchHistoryJson(**kargs)
-            if json_data['status'] == 15: # Match history denied, is set to private.
-                raise SteamAPIError("This user has his DotA2 Profile set to private.")
-            with connection.constraint_checks_disabled():
-                for match in json_data['matches']:
-                    if(len(match['players']) < 1): # Don't log matches without players.
-                        continue
-                    bulk_json = []
-                    json_player_data = match['players']
-                    if MatchDetails.objects.filter(pk=match['match_id']).exists() or MatchHistoryQueue.objects.filter(pk=match['match_id']).exists() or match['lobby_type'] == 4:
-                        continue # Object in queue or already created. Can ignore for now.
-                    match_history = MatchHistoryQueue.from_json_response(match)
-                    match_history.save() # Save here so the temporary match is created.
-                    for json_player in json_player_data:
-                        bulk_json.append(json_player)
-                        account_list.append(convertAccountNumbertoSteam64(json_player.get('account_id', None)))
-                    create_queue.append((match_history, bulk_json))
-                GetPlayerNames(account_list) # Loads accounts into cache
-                for create_match_history, json_player_list in create_queue:
-                    queue_player_set = []
-                    for json_player in json_player_list:
-                        queue_player_set.append(MatchHistoryQueuePlayers.from_json_response(create_match_history, json_player))
-                    create_match_history.matchhistoryqueueplayers_set.bulk_create(queue_player_set)
-            return_history = MatchHistoryQueue.objects.all().order_by('-start_time')
-            cache.set('match_history_refresh', return_history, 300) # Timeout to refresh match history.
+        json_data = GetMatchHistoryJson(**kargs)
+        if json_data['status'] == 15: # Match history denied, is set to private.
+            raise SteamAPIError("This user has his DotA2 Profile set to private.")
+        with connection.constraint_checks_disabled():
+            for match in json_data['matches']:
+                if(len(match['players']) < 1): # Don't log matches without players.
+                    continue
+                bulk_json = []
+                json_player_data = match['players']
+                if MatchDetails.objects.filter(pk=match['match_id']).exists() or MatchHistoryQueue.objects.filter(pk=match['match_id']).exists() or match['lobby_type'] == 4:
+                    continue # Object in queue or already created. Can ignore for now.
+                match_history = MatchHistoryQueue.from_json_response(match)
+                match_history.save() # Save here so the temporary match is created.
+                for json_player in json_player_data:
+                    bulk_json.append(json_player)
+                    account_list.append(convertAccountNumbertoSteam64(json_player.get('account_id', None)))
+                create_queue.append((match_history, bulk_json))
+            GetPlayerNames(account_list) # Loads accounts into cache
+            for create_match_history, json_player_list in create_queue:
+                queue_player_set = []
+                for json_player in json_player_list:
+                    queue_player_set.append(MatchHistoryQueuePlayers.from_json_response(create_match_history, json_player))
+                create_match_history.matchhistoryqueueplayers_set.bulk_create(queue_player_set)
+        return_history = MatchHistoryQueue.objects.all().order_by('-start_time')
         transaction.commit()
     except:
         transaction.rollback()
