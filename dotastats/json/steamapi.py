@@ -17,49 +17,31 @@ MATCH_HISTORY_URL = 'https://api.steampowered.com/IDOTA2Match_570/GetMatchHistor
 MATCH_DETAILS_URL = 'https://api.steampowered.com/IDOTA2Match_570/GetMatchDetails/V001/'
 STEAM_USER_NAMES = 'http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/'
 
-""" kargs
-player_name=<name> # Search matches with a player name, exact match only
-hero_id=<id> # Search for matches with a specific hero being played, hero id's are in dota/scripts/npc/npc_heroes.txt in your Dota install directory
-skill=<skill>  # 0 for any, 1 for normal, 2 for high, 3 for very high skill
-date_min=<date> # date in UTC seconds since Jan 1, 1970 (unix time format)
-date_max=<date> # date in UTC seconds since Jan 1, 1970 (unix time format)
-account_id=<id> # Steam account id (this is not SteamID, its only the account number portion)
-league_id=<id> # matches for a particular league
-start_at_match_id=<id> # Start the search at the indicated match id, descending
-matches_requested=<n> # Defaults is 25 matches, this can limit to less
-"""
-"""
-        "dota_game_mode_0"                                                "ALL PICK"
-        "dota_game_mode_1"                                                "SINGLE DRAFT"
-        "dota_game_mode_2"                                                "ALL RANDOM"
-        "dota_game_mode_3"                                                "RANDOM DRAFT"
-        "dota_game_mode_4"                                                "CAPTAINS DRAFT"
-        "dota_game_mode_5"                                                "CAPTAINS MODE"
-        "dota_game_mode_6"                                                "DEATH MODE"
-        "dota_game_mode_7"                                                "DIRETIDE"
-        "dota_game_mode_8"                                                "REVERSE CAPTAINS MODE"
-        "dota_game_mode_9"                                                "The Greeviling"
-        "dota_game_mode_10"                                                "TUTORIAL"
-        "dota_game_mode_11"                                                "MID ONLY"
-        "dota_game_mode_12"                                                "LEAST PLAYED"
-        "dota_game_mode_13"                                                "NEW PLAYER POOL"
-"""
-"""
-        [leaver_status] => NULL - Player is a bot.
-        
-        [leaver_status] => 3 - Player has abandoned the game.
-        
-        [leaver_status] => 1 - Player has left after the game has become safe to leave.
-        
-        [leaver_status] => 0 - Player has stayed for the entire match.
-"""
-
 def GetLatestMatches():
-    """ Returns the last 500 matches (sorted by match_seq_num) that were parsed into MatchDetails. """
+    """Returns the last 500 matches (sorted by match_seq_num) that were parsed into MatchDetails. 
+    """
     return MatchDetails.exclude_low_priority().all().order_by('-match_seq_num')[:500]
 
 @transaction.commit_manually
 def GetMatchHistory(**kargs):
+    """Loads items into MatchHistoryQueue.
+    This will poll the WebAPI and acquire a list of matches. This will never return a match that has already been processed into MatchDetails.
+    
+    Args:
+        **kargs (dict): kargs to pass into the WebAPI for filtering lookups. Valid kargs are:
+            player_name=<name> # Search matches with a player name, exact match only
+            hero_id=<id> # Search for matches with a specific hero being played, hero id's are in dota/scripts/npc/npc_heroes.txt in your Dota install directory
+            skill=<skill>  # 0 for any, 1 for normal, 2 for high, 3 for very high skill
+            date_min=<date> # date in UTC seconds since Jan 1, 1970 (unix time format)
+            date_max=<date> # date in UTC seconds since Jan 1, 1970 (unix time format)
+            account_id=<id> # Steam account id (this is not SteamID, its only the account number portion)
+            league_id=<id> # matches for a particular league
+            start_at_match_id=<id> # Start the search at the indicated match id, descending
+            matches_requested=<n> # Defaults is 25 matches, this can limit to less
+            
+    Returns:
+        A list of MatchHistoryQueue objects to be iterated on, sorted by match `start_time`
+    """
     create_queue = [] 
     account_list = []
     try:
@@ -75,7 +57,7 @@ def GetMatchHistory(**kargs):
                 if MatchDetails.objects.filter(pk=match['match_id']).exists() or MatchHistoryQueue.objects.filter(pk=match['match_id']).exists() or match['lobby_type'] == 4:
                     continue # Object in queue or already created. Can ignore for now.
                 match_history = MatchHistoryQueue.from_json_response(match)
-                match_history.save() # Save here so the temporary match is created.
+                match_history.save() # Save here so the pk is created.
                 for json_player in json_player_data:
                     bulk_json.append(json_player)
                     account_list.append(convertAccountNumbertoSteam64(json_player.get('account_id', None)))
@@ -95,6 +77,17 @@ def GetMatchHistory(**kargs):
 
 @transaction.commit_manually
 def CreateMatchDetails(matchid):
+    """This creates a MatchDetails object by matchid. 
+    If a MatchDetails object already exists, it is deleted and recreated.
+    WARNING: This method is volatile, and will always delete a conflicting duplicate match. See ``GetMatchDetails`` for a non-volatile lookup method.
+    
+    Args:
+        matchid (int): Valid MatchID to parse.
+        
+    Returns:
+        The newly created MatchDetails object.
+    
+    """
     bulk_create = []
     account_list = []
     match_details = None
@@ -133,16 +126,41 @@ def CreateMatchDetails(matchid):
 
 
 def GetMatchDetails(matchid, force_refresh=False):
+    """Fetches a MatchDetails object from db cache or newly created from json, by matchid.
+    NOTE: This method adheres to ``MATCH_FRESHNESS`` setting. Matches after this threshhold will be recreated.
+    
+    Args:
+        matchid (int): MatchID to look up.
+        
+    Kwargs:
+        force_refresh (bool): Whether to force match freshness.  True will cause a lookup regardless of last_refresh.
+        
+    Returns:
+        A MatchDetails object, old or new.
+    
+    """
     match_details = None
     try:
         match_details = MatchDetails.objects.get(match_id=matchid)
     except ObjectDoesNotExist:
         match_details = None
     if match_details == None or force_refresh or timezone.now() - match_details.last_refresh > MATCH_FRESHNESS: 
-        CreateMatchDetails(matchid)
+        match_details = CreateMatchDetails(matchid)
     return match_details
 
 def GetMatchHistoryJson(**kargs):
+    """Fetches MatchHistory JSON as dict from WebAPI.
+    
+    Args:
+        **kargs (dict): kwargs to pass to WebAPI for filtering. This is encoded into the url.
+        
+    Returns:
+        dict. The resulting dict of json.loads.
+        
+    Raises:
+        SteamAPIError: An error occured with a recognizable error code.
+        HTTPError: Misc. HTTP Error occured.
+    """
     json_data = dict()
     try:
         kargs.update({'key': API_KEY})
@@ -163,6 +181,18 @@ def GetMatchHistoryJson(**kargs):
     return json_data
 
 def GetMatchDetailsJson(match_id):
+    """Fetches MatchDetails JSON as dict from WebAPI.
+    
+    Args:
+        match_id (int): Valid match_id to pass to the WebAPI.
+        
+    Returns:
+        dict. The resulting dict of json.loads.
+        
+    Raises:
+        SteamAPIError: An error occured with a recognizable error code.
+        HTTPError: Misc. HTTP Error occured.
+    """
     json_data = dict()
     try:
         kargs = dict({'key': API_KEY, 'match_id': match_id})
@@ -182,15 +212,31 @@ def GetMatchDetailsJson(match_id):
         raise
     return json_data
 
-# Converts the 'account number' to Steam64. Does not convert PRIVATE players.
 def convertAccountNumbertoSteam64(steamID):
+    """Converts the `account number` to Steam64. Does not convert PRIVATE players.
+    This does the opposite of `convertSteam64toAccountNumber`
+    
+    Args:
+        steamID (int): None or SteamID to convert
+         
+     Returns:
+         int or None. None if steamID is 4294967295 or None. Otherwise returns the Steam64 ID. 
+    """
     if steamID == 4294967295 or steamID == None:
         return None
     else:
         return steamID + 76561197960265728
-    
-# Does the opposite of convertAccountNumbertoSteam64 and converts the Steam64 down to AccountNumber. 
+ 
 def convertSteam64toAccountNumber(steamID):
+    """Converts the Steam64 to 'account number'. Does not convert PRIVATE players.
+    This does the opposite of `convertAccountNumbertoSteam64`
+    
+    Args:
+        steamID (int): None or SteamID to convert
+         
+     Returns:
+         int or None. None if steamID is 4294967295 or None. Otherwise returns the Steam64 ID.
+     """
     if steamID == 4294967295 or steamID == None:
         return None
     else:
@@ -198,6 +244,14 @@ def convertSteam64toAccountNumber(steamID):
 
 # Only retreives name from cache. Doesn't load into cache or perform WebAPI lookups.
 def GetPlayerName(player_id):
+    """Retreives the steam name from a Steam64 playerid.
+    
+    Args:
+        player_id (int): None or SteamID to lookup.
+        
+    Returns:
+        string or 'Private' or 'Critical Cache Failure'. Returns Private if player_id is None, or if steam player object does not exist. 
+    """
     if player_id == 4294967295 or player_id == None:
         return 'Private'
     try: 
@@ -208,6 +262,15 @@ def GetPlayerName(player_id):
 # Loads names into cache.
 # Returns: Dict of player accountids, only retreives names that aren't in the cache.
 def GetPlayerNames(player_ids):
+    """Loads player_id into Steam Account cache.
+    This will take in a list and load the Steam Accounts into db cache from the Steam API.
+    
+    Args:
+        player_ids (list): List of SteamID64s to lookup.
+        
+    Returns:
+        dict. Returns dict of player_ids to persona_names.
+    """
     return_dict = dict({4294967295: 'PRIVATE',})
     try:
         request_list = []
