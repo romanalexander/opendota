@@ -193,15 +193,19 @@ class MatchDetails(models.Model):
         return get_game_type(self.game_mode)
     
     def get_players(self):
+        """Returns all players in the match."""
         return self.matchdetailsplayerentry_set.all()
     
     def get_dire_players(self):
+        """Returns dire players in the match."""
         return self.matchdetailsplayerentry_set.filter(player_slot__gte=100)
     
     def get_radiant_players(self):
+        """Returns radiant players in the match."""
         return self.matchdetailsplayerentry_set.filter(player_slot__lt=100)
     
     def drop_json_debug(self):
+        """Returns ugly looking json of the object."""
         return serializers.serialize("json", [self], indent=4)
     
     @staticmethod
@@ -229,7 +233,7 @@ class MatchDetails(models.Model):
     class Meta:
         ordering = ('-match_id',)
 
-class MatchPicksBans(models.Model): # TODO: BANPICKS. 115359820
+class MatchPicksBans(models.Model):
     match_details = models.ForeignKey('MatchDetails')
     is_pick = models.BooleanField()
     hero_id = models.ForeignKey('Heroes', related_name='+', db_column='hero_id')
