@@ -1,4 +1,5 @@
 from datetime import datetime
+from datetime import timedelta
 from django.db import models
 from django.db.models import Q
 from django.core import serializers
@@ -245,6 +246,10 @@ class MatchDetails(models.Model):
             return MatchDetails.objects.filter(last_refresh__lt=(timezone.now() - MATCH_FRESHNESS)).order_by('last_refresh')[0]
         except IndexError:
             return None
+        
+    def get_duration(self):
+        """Returns duration of match in H:M:S. """
+        return str(timedelta(seconds=self.duration))
     
     def get_lobby_type(self):
         return get_lobby_type(self.lobby_type)

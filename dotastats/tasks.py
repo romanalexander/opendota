@@ -75,7 +75,7 @@ def poll_match_history_queue():
         except Exception, e:
             success_value = False
             logger.error(traceback.format_exc())
-            logger.error("Error creating object: " + str(queue_object.pk))
+            logger.error("Error creating object.")
         finally:
             logger.debug("Lock released.")
             release_lock()

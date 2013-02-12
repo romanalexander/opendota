@@ -6,14 +6,14 @@
     {% include 'includes/searchbar_snippet.html' %}
     {% if match %}
         <h1>{{ match.get_game_type }}</h1><hr>
-        <div class="pull-right">began about {{ match.start_time|naturaltime }}.</div>
+        <div class="pull-right">Began {{ match.start_time|naturaltime }}.</div>
+        <div><strong>Duration</strong>: {{ match.get_duration }}</div>
         {% for team in teams %}
             {% if forloop.counter == 1%}
                 <h3>Radiant - {% if match.radiant_win %}Victory{% else %}Defeat{% endif %}</h3>
             {% else %}
                 <h3>Dire - {% if match.radiant_win %}Defeat{% else %}Victory{% endif %}</h3>
             {% endif %}
-            
             <table class="table table-bordered">
                 <thead>
                     <th class="dota_avatar">Hero</th>
@@ -66,8 +66,8 @@
                     {% endfor %}
                 </tbody>
             </table><br>
-        {% endfor %}    
-        
+        {% endfor %}
+        {{ match.drop_json_debug }}
     {% else %}
         <p>No match found.</p>
     {% endif %}
