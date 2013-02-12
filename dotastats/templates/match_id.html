@@ -35,7 +35,7 @@
                             {% if playerentry.is_bot %}
                             <em>Bot</em>
                             {% elif playerentry.account_id_id != 4294967295 and playerentry.account_id != None %}
-                            <img src="{{ playerentry.account_id.avatar }}"> <a href="{{ playerentry.account_id.profileurl }}">{{ playerentry.get_steam_name }}</a>
+                            <a href="{{ playerentry.account_id.profileurl }}"><img src="{{ playerentry.account_id.avatar }}"></a> <a href="{% url players playerentry.account_id.get_id_or_url %}">{{ playerentry.get_steam_name }}</a>
                             {% else %}
                             <em>{{ playerentry.get_steam_name }}</em>
                             {% endif %}
