@@ -2,6 +2,7 @@ from datetime import datetime
 from django.db import models
 from django.db.models import Q
 from django.core import serializers
+from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
 from django.utils.timezone import get_current_timezone
 from django.utils import timezone
@@ -25,6 +26,53 @@ class SteamPlayer(models.Model):
     
     def get_steam_name(self):
         return self.personaname
+
+    def get_id_or_url(self):
+        if self.profileurl:
+            return self.profileurl.split('/')[-2] # http://steamcommunity.com/profiles/XXXXXXXX/ <- Part we want is -2 index. 
+        else:
+            return self.steamid
+    
+    @staticmethod
+    def get_by_id(communityid):
+        """Returns a SteamPlayer object or None if does not exist.
+        Args:
+            communityid (int): CommunityID to retrieve.
+        Returns:
+            A SteamPlayer object, or None if it does not exist.
+        """
+        try:
+            return SteamPlayer.objects.get(steamid=communityid)
+        except ObjectDoesNotExist:
+            return None
+    
+    @staticmethod
+    def filter_by_name(name=None, profileurl=None, communityid=None, count=25):
+        """Returns at most ``count`` accounts that match either name or profileurl or both.
+        
+        Kwargs:
+            name (str): Name to match against.
+            profileurl (str): ProfileURL to match against.
+            communityid (int): CommunityID to match against. WARNING: Argument is ignored if non-integer. (Not garunteed to be single-result)
+            count (int): Amount of results to limit to.
+            
+        Returns:
+            At most a list of ``count`` SteamPlayer objects matched.
+        """
+        filter = Q()
+        if name == None and profileurl == None and communityid == None:
+            raise ValueError("Either name or profileurl or communityid must not be None.")
+        if name:
+            filter |= Q(personaname__icontains=name)
+        if profileurl:
+            filter |= Q(profileurl__iexact=profileurl)
+        try:
+            if communityid:
+                filter |= Q(steamid=int(communityid))
+        except ValueError:
+            pass
+        
+        return SteamPlayer.objects.filter(filter)[:count]
     
     @staticmethod
     def get_refresh():

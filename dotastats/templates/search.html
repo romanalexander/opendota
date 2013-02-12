@@ -25,18 +25,12 @@
     </div>
     <div id="results_players">
         <h2>Players</h2>
-        <div id="results_heroes_players"></div>
+        <div id="results_players_error"></div>
         <div id="results_players_table"></div>
-        <table class="table table-bordered" id="results_players_table">
-            <thead>
-                <th>Player Name</th>
-            </thead>
-            <tbody></tbody>
-        </table>
     </div>
     <div id="results_matches">
         <h2>Matches</h2>
-        <div id="results_heroes_matches"></div>
+        <div id="results_matches_error"></div>
         <table class="table table-bordered" id="results_matches_table">
             <thead>
                 <th>Player Name</th>
@@ -76,7 +70,7 @@
     }
     
     function render_players(data) {
-    	$('#results_players_table > tbody:last').append(data);
+    	$('#results_players_table').append(data);
         $('#results_players').show();
         done_players = true;
         remove_spinner();

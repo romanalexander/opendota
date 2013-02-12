@@ -2,6 +2,9 @@ body {
     padding-top: 60px;
     padding-bottom: 40px;
 }
+.steam_avatar {
+    width: 32px;
+}
 .dota_item {
     width: 62px; height: 32px;
 }
