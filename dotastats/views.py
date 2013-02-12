@@ -46,3 +46,5 @@ def search(request, search_param=None):
                         'search_param': search_param})
     return render(request, 'search.html', result_dict)
 
+def heroes(request, hero_name=None):
+    return render(request, 'heroes.html')

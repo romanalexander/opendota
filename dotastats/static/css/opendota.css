@@ -1,0 +1,22 @@
+body {
+    padding-top: 60px;
+    padding-bottom: 40px;
+}
+.dota_item {
+    width: 62px; height: 32px;
+}
+.dota_avatar {
+    width: 32px;
+}
+.dota_level {
+    width: 1em;
+}
+.dota_player_name {
+    width: 15em;
+}
+.dota_kda {
+    width: 10em;
+}
+.dota_lhd {
+    width: 10em;
+}

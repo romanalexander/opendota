@@ -60,6 +60,9 @@ class Heroes(models.Model):
     
     def get_code_name(self):
         return self.client_name[14:] # Ex:  npc_dota_hero_chaos_knight
+    
+    def get_url(self):
+        return self.dota2_name.replace(' ', '-') # Turns 'Phantom Lancer' into 'Phantom-Lancer'
 
 # Long-running queue of matches to look up.
 class MatchHistoryQueue(models.Model):
