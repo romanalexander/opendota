@@ -26,7 +26,6 @@ def poll_steamplayers_queue():
     for account in accounts:
         account_list.append(account.pk)
     if len(account_list) > 0:
-        print(account_list)
         GetPlayerNames(account_list)
         return True
     return None
