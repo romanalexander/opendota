@@ -21,16 +21,12 @@
     <div id="results_heroes">
         <h2>Heroes</h2>
         <div id="results_heroes_error"></div>
-        <table class="table table-bordered" id="results_heroes_table">
-            <thead>
-                <th>Player Name</th>
-            </thead>
-            <tbody></tbody>
-        </table>
+        <div id="results_heroes_table"></div>
     </div>
     <div id="results_players">
         <h2>Players</h2>
         <div id="results_heroes_players"></div>
+        <div id="results_players_table"></div>
         <table class="table table-bordered" id="results_players_table">
             <thead>
                 <th>Player Name</th>
@@ -55,7 +51,8 @@
     <script src="{% static 'js/spin.min.js' %}"></script>
     <script src="{% static 'js/search.js' %}"></script>
     <script>
-    
+    var setText = $('#search_request').val();  
+    $('#search_box').val(setText);
     </script>
     <script>
     $('#results_players').hide();
@@ -64,13 +61,13 @@
     $('#help_text').show();
     var done_matches = done_players = done_heroes = false;
     $(document).ready(function () {
-    	$("#loading").spin();
+    	$('#loading').spin();
     	ajax_request = {'search_request': $('#search_request').val()};
     	Dajaxice.dotastats.search_matches(Dajax.process, ajax_request);
     	Dajaxice.dotastats.search_players(Dajax.process, ajax_request);
     	Dajaxice.dotastats.search_heroes(Dajax.process, ajax_request);
 	});
-    function parse_matches(data) {
+    function render_matches(data) {
     	$('#results_matches_table > tbody:last').append(data);
     	$('#results_matches').show();
     	done_matches = true;
@@ -78,7 +75,7 @@
     	return;
     }
     
-    function parse_players(data) {
+    function render_players(data) {
     	$('#results_players_table > tbody:last').append(data);
         $('#results_players').show();
         done_players = true;
@@ -86,9 +83,9 @@
         return;
     }
     
-    function parse_heroes(data) {
-    	$('#results_heroes_table > tbody:last').append(data);
-        $('#results_heroes').show();
+    function render_heroes(data) {
+    	$('#results_heroes_table').append(data);
+    	$('#results_heroes').show();
         done_heroes = true;
         remove_spinner();
         return;
