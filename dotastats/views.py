@@ -50,5 +50,5 @@ def heroes(request, hero_name=None):
     return render(request, 'heroes.html')
 
 def players(request, player_id=None, player_url=None):
-    return render(request, 'heroes.html')
+    return render(request, 'players.html')
 
