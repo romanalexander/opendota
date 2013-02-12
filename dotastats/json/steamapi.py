@@ -13,6 +13,7 @@ from dotastats.exceptions import SteamAPIError
 # API Key macro from settings file.
 API_KEY = settings.STEAM_API_KEY
 MATCH_FRESHNESS = settings.DOTA_MATCH_REFRESH
+PLAYER_FRESHNESS = settings.DOTA_PLAYER_REFRESH
 MATCH_HISTORY_URL = 'https://api.steampowered.com/IDOTA2Match_570/GetMatchHistory/V001/'
 MATCH_DETAILS_URL = 'https://api.steampowered.com/IDOTA2Match_570/GetMatchDetails/V001/'
 STEAM_USER_NAMES = 'http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/'
@@ -262,8 +263,8 @@ def GetPlayerName(player_id):
 # Loads names into cache.
 # Returns: Dict of player accountids, only retreives names that aren't in the cache.
 def GetPlayerNames(player_ids):
-    """Loads player_id into Steam Account cache.
-    This will take in a list and load the Steam Accounts into db cache from the Steam API.
+    """Loads player_ids into Steam Account cache.
+    This will take in a list of account ids and load the Steam Accounts into db cache from the Steam API.
     
     Args:
         player_ids (list): List of SteamID64s to lookup.
@@ -273,7 +274,8 @@ def GetPlayerNames(player_ids):
     """
     return_dict = dict({4294967295: 'PRIVATE',})
     try:
-        request_list = []
+        request_list = [] # IDs to request from SteamAPI.
+        save_list = dict() # IDs to `save` instead of `create`. (To not invalidate FK constraints)
         if type(player_ids) is not list: # Always make sure player_ids is a list.
             player_ids = [player_ids,]
         for player_id in player_ids:
@@ -281,10 +283,11 @@ def GetPlayerNames(player_ids):
                 continue
             try:
                 player = SteamPlayer.objects.get(pk=player_id)
+                if timezone.now() - player.last_refresh > PLAYER_FRESHNESS:
+                    request_list.append(player.pk)
+                    save_list[str(player_id)] = player
             except ObjectDoesNotExist:
                 request_list.append(player_id)
-            else:
-                return_dict.update({player_id: player})
         if len(request_list) != 0: # Only allowed 100 users per request. Must split it up.
             do_this = True
             while do_this == True:
@@ -293,13 +296,15 @@ def GetPlayerNames(player_ids):
                     request_list = request_list[100:] # Get everything but first 100 elements.
                 else:
                     do_this = False # No longer over 100. Don't need to do this again.
-                response = urllib2.urlopen(STEAM_USER_NAMES + '?key=' + API_KEY + '&steamids=' + ','.join(str(req) for req in sliced_list)) # TODO: Clean me for clarity.
+                response = urllib2.urlopen(STEAM_USER_NAMES + '?key=' + API_KEY + '&steamids=' + ','.join(str(req) for req in sliced_list))
                 json_data = json.loads(response.read())['response']
                 bulk_create = []
                 for player in json_data['players']:
                     steamplayer = SteamPlayer.from_json_response(player)
-                    bulk_create.append(steamplayer)
-                    
+                    if player['steamid'] in save_list: # If object should be saved instead, save now. Bulk_create will raise IntegrityErrors.
+                        steamplayer.save()
+                    else:
+                        bulk_create.append(steamplayer)
                 SteamPlayer.objects.bulk_create(bulk_create)
                 response.close()
     except urllib2.HTTPError, e:

@@ -8,6 +8,7 @@ from django.utils import timezone
 
 TIME_ZONE_SETTING = get_current_timezone()
 MATCH_FRESHNESS = settings.DOTA_MATCH_REFRESH
+PLAYER_FRESHNESS = settings.DOTA_PLAYER_REFRESH
 
 class SteamPlayer(models.Model):
     steamid = models.BigIntegerField(primary_key=True, unique=True)
@@ -24,6 +25,14 @@ class SteamPlayer(models.Model):
     
     def get_steam_name(self):
         return self.personaname
+    
+    @staticmethod
+    def get_refresh():
+        """Returns at most 100 accounts to refresh. 
+        
+        Orders by last_refresh, oldest first.
+        """
+        return SteamPlayer.objects.filter(last_refresh__lt=(timezone.now() - PLAYER_FRESHNESS)).order_by('last_refresh')[:100]
     
     @staticmethod
     def from_json_response(json):

@@ -4,6 +4,7 @@ SECRET_KEY = 'sw*xnj3*+f-1%0fp310ajg-9f2(8_5$1=(gu7&q)h#lkwj%-an'
 # Steam Web API Key (generate new before project deployments)
 STEAM_API_KEY = 'B5CD24440CC4C06B6C4402D29D533022'
 DOTA_MATCH_REFRESH = timedelta(days=3) # Every 3 days, collect new data for matches from DotA2
+DOTA_PLAYER_REFRESH = timedelta(hours=6) # Every 6 hours we make sure we have the latest SteamPlayer information.
 
 import os
 import sys
@@ -217,6 +218,10 @@ CELERYBEAT_SCHEDULE = {
     'poll_match_history_queue': {
         'task': 'tasks.poll_match_history_queue',
         'schedule': timedelta(seconds=2),
-    }
+    },
+    'poll_steamplayers_queue': {
+        'task': 'tasks.poll_steamplayers_queue',
+        'schedule': timedelta(minutes=1),
+    },
 }
 

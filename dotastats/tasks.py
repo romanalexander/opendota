@@ -3,8 +3,8 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.cache import cache
 from djcelery import celery
-from dotastats.models import MatchHistoryQueue, MatchDetails
-from dotastats.json.steamapi import GetMatchDetails, GetMatchHistory
+from dotastats.models import MatchHistoryQueue, MatchDetails, SteamPlayer
+from dotastats.json.steamapi import GetMatchDetails, GetMatchHistory, GetPlayerNames
 from celery.utils.log import get_task_logger
 
 MATCH_FRESHNESS = settings.DOTA_MATCH_REFRESH
@@ -12,6 +12,24 @@ MATCH_FRESHNESS = settings.DOTA_MATCH_REFRESH
 LOCK_EXPIRE = 20 * 1
 
 logger = get_task_logger(__name__)
+
+@celery.task(name='tasks.poll_steamplayers_queue')
+def poll_steamplayers_queue():
+    """Celery task that handles the constant background refreshing of SteamPlayers.
+    
+    This task will take up to 100 old SteamPlayers and update them.
+    
+    Returns True if work was handled; None if no work to be done.
+    """
+    account_list = []
+    accounts = SteamPlayer.get_refresh()
+    for account in accounts:
+        account_list.append(account.pk)
+    if len(account_list) > 0:
+        print(account_list)
+        GetPlayerNames(account_list)
+        return True
+    return None
 
 @celery.task(name='tasks.poll_match_history_queue')
 def poll_match_history_queue():
