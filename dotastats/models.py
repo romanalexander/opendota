@@ -12,6 +12,32 @@ TIME_ZONE_SETTING = get_current_timezone()
 MATCH_FRESHNESS = settings.DOTA_MATCH_REFRESH
 PLAYER_FRESHNESS = settings.DOTA_PLAYER_REFRESH
 
+"""
+Tower Status:
+0x400 = ANCIENT_TOP
+0x200 = ANCIENT_BOTTOM
+0x100 = TOP_3
+0x80 = TOP_2
+0x40 = TOP_1
+0x20 = MIDDLE_3
+0x10 = MIDDLE_2
+0x8 = MIDDLE_1
+0x4 = BOTTOM_3
+0x2 = BOTTOM_2
+0x1 = BOTTOM_1
+"""
+
+"""
+Barracks Status:
+0x20 = TOP_RANGED
+0x10 = TOP_MELEE
+0x8 = MID_RANGED
+0x4 = MID_MELEE
+0x2 = BOT_RANGED
+0x1 = BOT_MELEE
+"""
+
+
 class SteamPlayer(models.Model):
     steamid = models.BigIntegerField(primary_key=True, unique=True)
     last_refresh = models.DateTimeField(auto_now=True, auto_now_add=True, db_index=True) # Last time this player was checked.
@@ -236,7 +262,7 @@ class MatchDetails(models.Model):
         
         Currently excludes all matches marked Private, all matches without 10 players, and all matches less than 4 minutes long. 
         """
-        return MatchDetails.objects.exclude(Q(lobby_type=4) | Q(human_players__lt=10) | Q(duration__lt=240))
+        return MatchDetails.objects.exclude(Q(lobby_type=4) | Q(human_players__lt=10) | Q(duration__lt=480) | (Q(tower_status_dire=2047) & Q(tower_status_radiant=2047)))
     
     @staticmethod
     def get_refresh():

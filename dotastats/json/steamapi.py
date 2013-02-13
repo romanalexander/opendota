@@ -21,7 +21,7 @@ STEAM_USER_NAMES = 'http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0
 def GetLatestMatches():
     """Returns the last 500 matches (sorted by match_seq_num) that were parsed into MatchDetails. 
     """
-    return MatchDetails.exclude_low_priority().all().order_by('-match_seq_num')[:500]
+    return MatchDetails.exclude_low_priority().filter(lobby_type=0).order_by('-match_seq_num')[:500]
 
 @transaction.commit_manually
 def GetMatchHistory(**kargs):

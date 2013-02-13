@@ -5,7 +5,8 @@
 {% block content %}
     {% include 'includes/searchbar_snippet.html' %}
     {% if match %}
-        <h1>{{ match.get_game_type }}</h1><hr>
+        <h1 style="display: inline;">{{ match.get_game_type }}</h1> <h3 style="display: inline; color: gray;">{{ match.get_lobby_type }}</h3>
+        <hr>
         <div class="pull-right">Began {{ match.start_time|naturaltime }}.</div>
         <div><strong>Duration</strong>: {{ match.get_duration }}</div>
         {% for team in teams %}
