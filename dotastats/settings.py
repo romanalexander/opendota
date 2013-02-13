@@ -223,5 +223,9 @@ CELERYBEAT_SCHEDULE = {
         'task': 'tasks.poll_steamplayers_queue',
         'schedule': timedelta(minutes=1),
     },
+    'poll_match_sequence': {
+        'task': 'tasks.poll_match_sequence',
+        'schedule': timedelta(seconds=10),
+    }
 }
 

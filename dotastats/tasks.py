@@ -4,7 +4,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.cache import cache
 from djcelery import celery
 from dotastats.models import MatchHistoryQueue, MatchDetails, SteamPlayer
-from dotastats.json.steamapi import GetMatchDetails, GetMatchHistory, GetPlayerNames
+from dotastats.json.steamapi import GetMatchDetails, GetMatchHistory, GetPlayerNames, GetMatchHistoryBySequenceNum
 from celery.utils.log import get_task_logger
 
 MATCH_FRESHNESS = settings.DOTA_MATCH_REFRESH
@@ -12,6 +12,31 @@ MATCH_FRESHNESS = settings.DOTA_MATCH_REFRESH
 LOCK_EXPIRE = 20 * 1
 
 logger = get_task_logger(__name__)
+
+@celery.task(name='tasks.poll_match_sequence')
+def poll_match_sequence():
+    """Celery task that handles the background loading of new matches in bulk.
+    
+    Returns True if work was handled, None if there was no work to be done.
+    """
+    lock_id = "poll_match_sequence_lock"
+    success_value = True
+    acquire_lock = lambda: cache.add(lock_id, "true", LOCK_EXPIRE)
+    release_lock = lambda: cache.delete(lock_id)
+    
+    if acquire_lock():
+        logger.debug("Queue locked.")
+        try:
+            if GetMatchHistoryBySequenceNum() == None: # No work was handled.
+                success_value = None
+        except Exception, e:
+            success_value = False
+            logger.error(traceback.format_exc())
+            logger.error("Error creating object.")
+        finally:
+            logger.debug("Lock released.")
+            release_lock()
+    return success_value
 
 @celery.task(name='tasks.poll_steamplayers_queue')
 def poll_steamplayers_queue():

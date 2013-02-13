@@ -7,7 +7,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction, connection
 from django.core.cache import cache
 from django.utils import timezone
-from dotastats.models import MatchDetails, MatchDetailsPlayerEntry, SteamPlayer, MatchHistoryQueue, MatchHistoryQueuePlayers, MatchPicksBans
+from dotastats.models import MatchDetails, MatchDetailsPlayerEntry, SteamPlayer, MatchHistoryQueue, MatchHistoryQueuePlayers, MatchPicksBans, MatchSequenceNumber
 from dotastats.exceptions import SteamAPIError
 
 # API Key macro from settings file.
@@ -15,6 +15,7 @@ API_KEY = settings.STEAM_API_KEY
 MATCH_FRESHNESS = settings.DOTA_MATCH_REFRESH
 PLAYER_FRESHNESS = settings.DOTA_PLAYER_REFRESH
 MATCH_HISTORY_URL = 'https://api.steampowered.com/IDOTA2Match_570/GetMatchHistory/V001/'
+MATCH_SEQUENCE_URL = 'https://api.steampowered.com/IDOTA2Match_570/GetMatchHistoryBySequenceNum/V001/'
 MATCH_DETAILS_URL = 'https://api.steampowered.com/IDOTA2Match_570/GetMatchDetails/V001/'
 STEAM_USER_NAMES = 'http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/'
 
@@ -23,10 +24,48 @@ def GetLatestMatches():
     """
     return MatchDetails.exclude_low_priority().filter(lobby_type=0).order_by('-match_seq_num')[:500]
 
+def GetMatchHistoryBySequenceNum(start_at_match_seq_num=None):
+    """Loads items into MatchDetails.
+    This will poll the WebAPI and acquire a list of MatchDetails. This function is intended to be used as bulk data import. 
+    Data returned by this API is returned, by match_seq_num ascending.
+    This method keeps a record of the last match_seq_num recorded + 1.
+    WARNING: This method is volatile, matches retreived by this method will always be refreshed.
+    
+    Args:
+        start_at_match_seq (int): If None, this method will use the last match_seq_num it requested, and the match_seq_num will not be recorded. Otherwise it will use the seq_num requested.
+    
+    Returns:
+        None if no matches were processed at all, otherwise integer of the last match_seq_num. (That is, takes the last in the WebAPI resultset and increments by 1.) 
+    """
+    if start_at_match_seq_num:
+        record_last_match_seq_num = False
+    else:
+        record_last_match_seq_num = True
+        start_at_match_seq_num = MatchSequenceNumber.get_last_match_seq_num()
+        
+    json_data = GetMatchHistoryBySequenceNumJson(start_at_seq_num=start_at_match_seq_num)
+    
+    if json_data['status'] != 1:
+        raise SteamAPIError("API Status was not 1. Possible error occured.")
+    if len(json_data['matches']) == 0:
+        return None
+    
+    last_seq_record = 0
+    for match_json in json_data['matches']:
+        CreateMatchDetails(match_json['match_id'], match_json)
+        last_seq_record = match_json['match_seq_num']
+        
+    last_seq_record += 1 # Increment the last record by 1 so the next match is loaded instead.
+    if record_last_match_seq_num:
+        MatchSequenceNumber.set_last_match_seq_num(last_seq_record)
+        
+    return last_seq_record
+    
 @transaction.commit_manually
 def GetMatchHistory(**kargs):
     """Loads items into MatchHistoryQueue.
     This will poll the WebAPI and acquire a list of matches. This will never return a match that has already been processed into MatchDetails.
+    This function is intended to be used in conjunction with specified kwargs.
     
     Args:
         **kargs (dict): kargs to pass into the WebAPI for filtering lookups. Valid kargs are:
@@ -77,13 +116,14 @@ def GetMatchHistory(**kargs):
     return return_history
 
 @transaction.commit_manually
-def CreateMatchDetails(matchid):
+def CreateMatchDetails(matchid, json_data=None):
     """This creates a MatchDetails object by matchid. 
     If a MatchDetails object already exists, it is deleted and recreated.
     WARNING: This method is volatile, and will always delete a conflicting duplicate match. See ``GetMatchDetails`` for a non-volatile lookup method.
     
     Args:
         matchid (int): Valid MatchID to parse.
+        json_data (dict): Instead of asking WebAPI for json, you can provide your own. 
         
     Returns:
         The newly created MatchDetails object.
@@ -94,15 +134,16 @@ def CreateMatchDetails(matchid):
     match_details = None
     MatchDetails.objects.filter(match_id=matchid).all().delete() # Delete all previous MatchDetails.
     try:
-        try:
-            json_data = GetMatchDetailsJson(matchid)
-        except urllib2.HTTPError, e:
-            if e.code == 401: # Unauthorized to view lobby. Return None
-                MatchHistoryQueue.objects.filter(match_id=matchid).all().delete() # Remove from queue.
-                transaction.commit() # Make sure the deletion goes through before raising error.
-                raise SteamAPIError("This lobby is password protected.")
-            else:
-                raise
+        if not json_data:
+            try:
+                json_data = GetMatchDetailsJson(matchid)
+            except urllib2.HTTPError, e:
+                if e.code == 401: # Unauthorized to view lobby. Return None
+                    MatchHistoryQueue.objects.filter(match_id=matchid).all().delete() # Remove from queue.
+                    transaction.commit() # Make sure the deletion goes through before raising error.
+                    raise SteamAPIError("This lobby is password protected.")
+                else:
+                    raise
         json_player_data = json_data['players']
         match_details = MatchDetails.from_json_response(json_data)
         match_details.save()
@@ -114,7 +155,7 @@ def CreateMatchDetails(matchid):
             MatchPicksBans.objects.bulk_create(picks_bans_bulk_create)
         for json_player in json_player_data:
             bulk_create.append(MatchDetailsPlayerEntry.from_json_response(match_details, json_player))
-            account_list.append(convertAccountNumbertoSteam64(json_player['account_id']))
+            account_list.append(convertAccountNumbertoSteam64(json_player.get('account_id', None)))
         GetPlayerNames(account_list) # Loads accounts into db for FK constraints. TODO: Re-work me? Disable FK constraints entirely?
         if match_details != None and len(bulk_create) > 0: 
             match_details.matchdetailsplayerentry_set.bulk_create(bulk_create)
@@ -199,6 +240,41 @@ def GetMatchDetailsJson(match_id):
         kargs = dict({'key': API_KEY, 'match_id': match_id})
         url_data = urllib.urlencode(kargs)
         response = urllib2.urlopen(MATCH_DETAILS_URL + '?' + url_data)
+        json_data = json.loads(response.read())['result']
+        response.close()
+    except urllib2.HTTPError, e:
+        if e.code == 400:
+            raise SteamAPIError("Malformed API request.")
+        elif e.code == 401:
+            raise SteamAPIError("Unauthorized API access. Please recheck your API key.")
+        elif e.code == 503:
+            raise SteamAPIError("The Steam servers are currently overloaded.")
+        else:
+            raise SteamAPIError("Unknown API error" + str(e.code))
+        raise
+    return json_data
+
+def GetMatchHistoryBySequenceNumJson(start_at_seq_num=None):
+    """ Fetches GetMatchHistoryBySequenceNum JSON as dict from WebAPI.
+    
+    Args:
+        start_at_seq_num (int): If None, argument will be left out of urlencode. Otherwise this argument is included.
+        
+    Returns:
+        dict. The resulting dict of json.loads
+        
+    Raises:
+        SteamAPIError: An error occured with a recognizable error code.
+        HTTPError: Misc. HTTP Error occured.
+    """
+    json_data = dict()
+    args = dict()
+    if start_at_seq_num:
+        args.update({'start_at_match_seq_num': start_at_seq_num})
+    try:
+        args.update({'key': API_KEY})
+        url_data = urllib.urlencode(args)
+        response = urllib2.urlopen(MATCH_SEQUENCE_URL + '?' + url_data)
         json_data = json.loads(response.read())['result']
         response.close()
     except urllib2.HTTPError, e:

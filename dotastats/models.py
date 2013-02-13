@@ -396,7 +396,7 @@ class MatchDetailsPlayerEntry(models.Model):
                 kills=json['kills'],
                 deaths=json['deaths'],
                 assists=json['assists'],
-                leaver_status=json['leaver_status'],
+                leaver_status=json.get('leaver_status', None),
                 gold=json['gold'],
                 last_hits=json['last_hits'],
                 denies=json['denies'],
@@ -409,10 +409,25 @@ class MatchDetailsPlayerEntry(models.Model):
                 level=json['level'],
                 ability_upgrades=json.get('ability_upgrades', None), # ability_upgrades can be null. 
                 additional_units=json.get('additional_units', None),
-                is_bot=True if json.get('account_id', None) == None else False,)
+                is_bot=True if json.get('account_id', None) == None or json.get('leaver_status', None) == None else False,)
         
     class Meta:
         unique_together = (('match_details', 'hero_id', 'player_slot',),) # Every match, only one hero_id per player slot.
         ordering = ('player_slot',)
+
+class MatchSequenceNumber(models.Model):
+    """This model exists as a persistent object. 
+    The intended usage is to use get_last_match_seq_num and set_last_match_seq_num static methods."""
+    last_match_seq_num = models.BigIntegerField(default=0)
+    
+    @staticmethod
+    def get_last_match_seq_num():
+        """Gets the record in this model. If it does not exist, or has not yet been initialized, returns default 0."""
+        return MatchSequenceNumber.objects.get_or_create(pk=1)[0].last_match_seq_num
+            
+    @staticmethod
+    def set_last_match_seq_num(last_seq_num):
+        """Sets the record in this model."""
+        MatchSequenceNumber(pk=1, last_match_seq_num=last_seq_num).save()
         
 from dotastats.json import steamapi
