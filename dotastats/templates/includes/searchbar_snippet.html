@@ -1,6 +1,6 @@
 <form method="get" action="javascript:window.location.href = '{% url search %}' + $('#search_box').val(); class="form-search" style="text-align:center;">
     <div class="control-group">
-        <span class="input-prepend"><span class="add-on"><i class="icon-search"> </i></span><input id="search_box" type="text" class="input-large"></span>
+        <span class="input-prepend"><span class="add-on"><i class="icon-search"> </i></span><input id="search_box" type="text" class="input-large" placeholder="Hero or Player name"></span>
         <button type="submit" class="btn" onclick="window.location.href = '{% url search %}' + $('#search_box').val();">Search</button>
     </div>
 </form>
