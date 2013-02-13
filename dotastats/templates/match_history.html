@@ -7,6 +7,7 @@
     <table class="table table-bordered">
         <thead>
             <th>MatchID</th>
+            <th>Game Type</th>
             <th>Duration</th>
             <th>Recorded</th>
             <th>Radiant</th>
@@ -17,6 +18,7 @@
             {% for match in match_history %}
             <tr>
                 <td><a href="{% url matches_id match_id=match.match_id %}">{{ match.match_id }}</a></td>
+                <td>{{ match.get_game_type }}</td>
                 <td>{{ match.get_duration }}</td>
                 <td>{{ match.start_time|naturaltime }}</td>
                 <td>

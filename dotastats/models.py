@@ -163,19 +163,17 @@ class MatchHistoryQueuePlayers(models.Model):
             hero_id_id=json['hero_id'],
             is_bot=True if json.get('account_id', None) == None else False,)
 
-def get_game_type(game_mode): # TODO: Finish me
-    if game_mode == 0:
+def get_game_type(game_mode):
+    if game_mode == 1:
         return 'All Pick'
-    elif game_mode == 1:
-        return 'Single Draft'
     elif game_mode == 2:
-        return 'All Random'
+        return "Captain's Mode"
     elif game_mode == 3:
         return 'Random Draft'
     elif game_mode == 4:
-        return "Captain's Draft"
+        return 'Single Draft'
     elif game_mode == 5:
-        return "Captain's Mode"
+        return 'All Random'    
     elif game_mode == 6:
         return 'Death Mode'
     elif game_mode == 7:
@@ -197,11 +195,17 @@ def get_game_type(game_mode): # TODO: Finish me
         
 def get_lobby_type(lobby_type):
     if lobby_type == 0:
-        return 'Public Matchmaking'
+        return 'Public Match'
     elif lobby_type == 1:
-        return 'Bot Match'
+        return 'Practice Match'
+    elif lobby_type == 2:
+        return 'Tournament Match'
+    elif lobby_type == 3:
+        return 'Tutorial'
     elif lobby_type == 4:
-        return 'Private?'
+        return 'Co-op Bot Match'
+    elif lobby_type == 5:
+        return 'Team Match'
     else:
         return str(lobby_type)
 
