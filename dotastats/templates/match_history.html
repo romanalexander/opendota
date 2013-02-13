@@ -1,12 +1,41 @@
 {% extends 'base.html' %}
 {% load humanize %}
+{% load staticfiles %}
 
 {% block content %}
     {% include 'includes/searchbar_snippet.html' %}
+    <table class="table table-bordered">
+        <thead>
+            <th>MatchID</th>
+            <th>Duration</th>
+            <th>Radiant</th>
+            <th>Dire</th>
+        </thead>
+        <tbody>
+            
+            {% for match in match_history %}
+            <tr>
+                <td><a href="{% url matches_id match_id=match.match_id %}">{{ match.match_id }}</a></td>
+                <td>{{ match.get_duration }}</td>
+                <td>
+                {% for playerentry in match.get_radiant_players %}
+                <img src="{% static 'img/miniheroes/'|add:playerentry.hero_id.get_code_name|add:'.png' %}" alt="{{ playerentry.hero_id }}">
+                {% endfor %}
+                </td>
+                
+                <td>
+                {% for playerentry in match.get_dire_players %}
+                <img src="{% static 'img/miniheroes/'|add:playerentry.hero_id.get_code_name|add:'.png' %}" alt="{{ playerentry.hero_id }}">
+                {% endfor %}
+                </td>
+            </tr>
+
+            {% endfor %}
+        </tbody>
+        
+        
+    </table>
     
-    {% for match in match_history %}
-        {{ match.get_lobby_type }}: <a href="{% url matches_id match_id=match.match_id %}">{{ match.match_id }}</a> began about {{ match.start_time|naturaltime }}. Last checked about {{ match.last_refresh|naturaltime }}.
-        <br>
-    {% endfor %}
+    
     {% include 'includes/paginator_snippet.html' with results=match_history %}
 {% endblock %}
