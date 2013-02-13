@@ -1,8 +1,8 @@
 from datetime import timedelta
 # Make this unique, and don't share it with anybody.
-SECRET_KEY = 'sw*xnj3*+f-1%0fp310ajg-9f2(8_5$1=(gu7&q)h#lkwj%-an'
+SECRET_KEY = '' # CHANGE ME BEFORE START.
 # Steam Web API Key (generate new before project deployments)
-STEAM_API_KEY = 'B5CD24440CC4C06B6C4402D29D533022'
+STEAM_API_KEY = '' # CHANGE ME BEFORE START.
 DOTA_MATCH_REFRESH = timedelta(days=3) # Every 3 days, collect new data for matches from DotA2
 DOTA_PLAYER_REFRESH = timedelta(hours=6) # Every 6 hours we make sure we have the latest SteamPlayer information.
 
