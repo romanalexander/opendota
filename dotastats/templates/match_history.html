@@ -8,6 +8,7 @@
         <thead>
             <th>MatchID</th>
             <th>Duration</th>
+            <th>Recorded</th>
             <th>Radiant</th>
             <th>Dire</th>
         </thead>
@@ -17,12 +18,12 @@
             <tr>
                 <td><a href="{% url matches_id match_id=match.match_id %}">{{ match.match_id }}</a></td>
                 <td>{{ match.get_duration }}</td>
+                <td>{{ match.start_time|naturaltime }}</td>
                 <td>
                 {% for playerentry in match.get_radiant_players %}
                 <img src="{% static 'img/miniheroes/'|add:playerentry.hero_id.get_code_name|add:'.png' %}" alt="{{ playerentry.hero_id }}">
                 {% endfor %}
                 </td>
-                
                 <td>
                 {% for playerentry in match.get_dire_players %}
                 <img src="{% static 'img/miniheroes/'|add:playerentry.hero_id.get_code_name|add:'.png' %}" alt="{{ playerentry.hero_id }}">
