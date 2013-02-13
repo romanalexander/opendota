@@ -21,12 +21,12 @@
                 <td>{{ match.start_time|naturaltime }}</td>
                 <td>
                 {% for playerentry in match.get_radiant_players %}
-                <img src="{% static 'img/miniheroes/'|add:playerentry.hero_id.get_code_name|add:'.png' %}" alt="{{ playerentry.hero_id }}">
+                <img src="{% static 'img/miniheroes/'|add:playerentry.hero_id.get_code_name|add:'.png' %}" alt="{{ playerentry.hero_id }}" title="{{ playerentry.hero_id }}">
                 {% endfor %}
                 </td>
                 <td>
                 {% for playerentry in match.get_dire_players %}
-                <img src="{% static 'img/miniheroes/'|add:playerentry.hero_id.get_code_name|add:'.png' %}" alt="{{ playerentry.hero_id }}">
+                <img src="{% static 'img/miniheroes/'|add:playerentry.hero_id.get_code_name|add:'.png' %}" alt="{{ playerentry.hero_id }}" title="{{ playerentry.hero_id }}">
                 {% endfor %}
                 </td>
             </tr>

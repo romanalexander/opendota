@@ -26,7 +26,7 @@
                 <tbody>
                     {% for playerentry in team.all %}
                     <tr>
-                        <td><img src="{% static 'img/miniheroes/'|add:playerentry.hero_id.get_code_name|add:'.png' %}" alt="{{ playerentry.hero_id }}"></td>
+                        <td><img src="{% static 'img/miniheroes/'|add:playerentry.hero_id.get_code_name|add:'.png' %}" alt="{{ playerentry.hero_id }}" title="{{ playerentry.hero_id }}"></td>
                         <td>{{ playerentry.level }}</td>
                         <td>
                             {% if playerentry.leaver_status == 3 %}

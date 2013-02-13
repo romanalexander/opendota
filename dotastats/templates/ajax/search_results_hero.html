@@ -7,7 +7,7 @@
 	<tbody>
 		{% for result in results %}
 		<tr>
-            <td><img src="{% static 'img/miniheroes/'|add:result.get_code_name|add:'.png' %}" alt="{{ result }}"></td>
+            <td><img src="{% static 'img/miniheroes/'|add:result.get_code_name|add:'.png' %}" alt="{{ result }}" title="{{ result }}"></td>
 			<td><a href="{% url heroes result.get_url %}">{{ result.dota2_name }}</a></td>
 		</tr>
         {% empty %}
