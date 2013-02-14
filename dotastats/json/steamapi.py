@@ -154,8 +154,10 @@ def CreateMatchDetails(matchid, json_data=None):
                 picks_bans_bulk_create.append(MatchPicksBans.from_json_response(match_details, json_picks_bans))
             MatchPicksBans.objects.bulk_create(picks_bans_bulk_create)
         for json_player in json_player_data:
-            bulk_create.append(MatchDetailsPlayerEntry.from_json_response(match_details, json_player))
-            account_list.append(convertAccountNumbertoSteam64(json_player.get('account_id', None)))
+            bulk_player = MatchDetailsPlayerEntry.from_json_response(match_details, json_player)
+            if bulk_player:
+                bulk_create.append(bulk_player)
+                account_list.append(convertAccountNumbertoSteam64(json_player.get('account_id', None)))
         GetPlayerNames(account_list) # Loads accounts into db for FK constraints. TODO: Re-work me? Disable FK constraints entirely?
         if match_details != None and len(bulk_create) > 0: 
             match_details.matchdetailsplayerentry_set.bulk_create(bulk_create)

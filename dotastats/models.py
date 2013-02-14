@@ -382,6 +382,8 @@ class MatchDetailsPlayerEntry(models.Model):
         
     @staticmethod
     def from_json_response(match_details, json):
+        if json['hero_id'] == 0: # Legacy compatibility designating empty player slot. 
+            return None
         return MatchDetailsPlayerEntry(
                 match_details = match_details,
                 account_id_id=steamapi.convertAccountNumbertoSteam64(json.get('account_id', None)), # Store all data in steam64. No reason to have Steam32.
