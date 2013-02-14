@@ -8,6 +8,7 @@ DOTA_PLAYER_REFRESH = timedelta(hours=6) # Every 6 hours we make sure we have th
 
 import os
 import sys
+import dj_database_url
 
 settings_dir = os.path.dirname(__file__)
 PROJECT_ROOT = os.path.abspath(os.path.dirname(settings_dir))
@@ -21,17 +22,25 @@ ADMINS = (
     # ('Your Name', 'your_email@example.com'),
 )
 
-MANAGERS = ADMINS
-
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': os.path.join(PROJECT_ROOT, 'testdb.sqllite'),                      # Or path to database file if using sqlite3.
+        'ENGINE': '', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
+        'NAME': '',                      # Or path to database file if using sqlite3.
         'USER': '',                      # Not used with sqlite3.
         'PASSWORD': '',                  # Not used with sqlite3.
         'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
         'PORT': '',                      # Set to empty string for default. Not used with sqlite3.
     }
+}
+
+MANAGERS = ADMINS
+
+if not os.environ.has_key('DATABASE_URL'):
+    os.environ['DATABASE_URL'] = 'postgres://postgres:password@localhost/opendota'
+DATABASES = {'default': dj_database_url.config(default=os.environ['DATABASE_URL'])}
+
+SOUTH_DATABASE_ADAPTERS = {
+    'default': 'south.db.postgresql_psycopg2'
 }
 
 # Local time zone for this installation. Choices can be found here:
@@ -202,11 +211,6 @@ LOGIN_REDIRECT_URL = '/'
 OPENID_SSO_SERVER_URL = 'server-endpoint-url'
 OPENID_SSO_SERVER_URL = 'https://steamcommunity.com/openid'
 
-# Parse database configuration from $DATABASE_URL
-import dj_database_url
-if not DEBUG: # In production, use heroku postgres. 
-    DATABASES['default'] =  dj_database_url.config()
-
 import djcelery
 djcelery.setup_loader()
 
@@ -228,4 +232,3 @@ CELERYBEAT_SCHEDULE = {
         'schedule': timedelta(seconds=10),
     }
 }
-
