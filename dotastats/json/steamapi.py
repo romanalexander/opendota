@@ -164,6 +164,7 @@ def CreateMatchDetails(matchid, json_data=None):
         MatchHistoryQueue.objects.filter(match_id=matchid).all().delete()
         transaction.commit()
     except:
+        print("Error creating match: " + str(matchid) + ". Rolling back.")
         transaction.rollback()
         raise
     return match_details
